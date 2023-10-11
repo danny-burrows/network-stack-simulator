@@ -52,6 +52,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-def test_unit():
-    assert 0 == 0
