@@ -1,54 +1,134 @@
 
 import os
 import time
-import random
 import threading
 
 
-def pipe_open(pipe_path):
-    if not os.path.exists(pipe_path):
-        os.mkfifo(pipe_path)
+class NamedPipe:
+    CODE_PACKET_DELIM="PIPE_PACKET_DELIM\n"
+    CODE_CLOSE_SERVER="PIPE_CODE_CLOSE_SERVER\n"
+
+    def __init__(self, pipe_path):
+        self.pipe_path = pipe_path
+        self.open_pipe()
+
+    def open_pipe(self):
+        if not os.path.exists(self.pipe_path):
+            os.mkfifo(self.pipe_path)
+
+    def delete_pipe(self):
+        if os.path.exists(self.pipe_path):
+            os.remove(self.pipe_path)
+
+    def send(self, payload):
+        print(f"(Pipe) Sending packet to {self.pipe_path}\n============\n{payload}============")
+        pipe_out = os.open(self.pipe_path, os.O_WRONLY)
+        os.write(pipe_out, payload.encode())
+        os.write(pipe_out, NamedPipe.CODE_PACKET_DELIM.encode())
+        os.close(pipe_out)
+        print("(Pipe) Sent\n")
+
+    def listen(self, callback):
+        print(f"(Pipe) Listening for packets from {self.pipe_path}\n")
+        run_server = True
+        while run_server:
+            with open(self.pipe_path, 'r') as pipe_in:
+                pipe_data = pipe_in.read()
+                packet_end = pipe_data.find(NamedPipe.CODE_PACKET_DELIM)
+                while packet_end != -1:
+                    payload = pipe_data[:packet_end]
+                    print(f"(Pipe) Received payload\n============\n{payload}============\n")
+                    if payload == NamedPipe.CODE_CLOSE_SERVER:
+                        run_server = False
+                    callback(payload)
+                    pipe_data = pipe_data[packet_end+len(NamedPipe.CODE_PACKET_DELIM):]
+                    packet_end = pipe_data.find(NamedPipe.CODE_PACKET_DELIM)
 
 
-def pipe_close(pipe_path):
-    if os.path.exists(pipe_path):
-        os.remove(pipe_path)
+class DNSProtocol:
+    def resolve_ip(self, url):
+        return "0.0.0.0"
 
 
-def client(pipe_path):    
-    pipe_out = os.open(pipe_path, os.O_WRONLY)
+class HTTPProtocol:
+    def create_request(self, method, ip, body=None):
+        req = None
+        match method:
+            case "HEAD":
+                req = "A"
+                req = f"{method} / HTTP/1.1\n"
+                req += f"Host: {ip}\n"
+                req += "\n"
+                if body:
+                    req += f"{body}\n"
+        return req
     
-    # Send some random messages
-    for _ in range(3):
-        random_message = f'Random Message: {random.random() * 1000:.0f}\n'
-        os.write(pipe_out, random_message.encode())
-        time.sleep(0.3)
+
+class PhysicalLayer:
+    def __init__(self, pipe_path):
+        self.named_pipe = NamedPipe(pipe_path)
+
+    def send(self, packet):
+        self.named_pipe.send(packet)
+
+    def listen(self, callback):
+        self.named_pipe.listen(callback)
+
+
+class ClientApplicationLayer:
+    def __init__(self, physical_layer):
+        self.physical_layer = physical_layer
+        self.dns_protocol = DNSProtocol()
+        self.http_protocol = HTTPProtocol()
     
-    os.write(pipe_out, b'end\n')
+    def send_http_request(self, method, url):
+        print(f"(Client App) Sending HTTP Request ({method}, {url})\n")
+
+        ip = self.dns_protocol.resolve_ip(url)
+        print(f"(Client App) Resolved IP {url} => {ip}\n")
+
+        req1 = self.http_protocol.create_request(method, ip, body="1")
+        self.physical_layer.send(req1)
+        req2 = self.http_protocol.create_request(method, ip, body="2")
+        self.physical_layer.send(req2)
+
+        self.physical_layer.send(NamedPipe.CODE_CLOSE_SERVER)
 
 
-def server(pipe_path):    
-    with open(pipe_path, 'r') as pipe_in:
-        while True:
-            message = pipe_in.readline()[:-1]
-            if message == 'end':
-                print('Server: Recived "end" signal, shutting down.')
-                break
-            
-            print(f'Server: Recived "{message}".')
+class ServerApplicationLayer:
+    def __init__(self, physical_layer):
+        self.http_protocol = HTTPProtocol()
+        self.physical_layer = physical_layer
 
+    def listen_http(self):
+        print(f"(Server App) Listening for HTTP\n")
+        self.physical_layer.listen(self.receive_http)
+
+    def receive_http(self, packet):
+        pass
+
+
+def client(pipe_path):
+    physical = PhysicalLayer(pipe_path)
+    application = ClientApplicationLayer(physical)
     
+    application.send_http_request("HEAD", "google.com")
+
+
+def server(pipe_path):
+    physical = PhysicalLayer(pipe_path)
+    application = ServerApplicationLayer(physical)
+    
+    application.listen_http()
+
+
 def main():
-    pipe_path = '/tmp/client-pipe'
-    
-    pipe_open(pipe_path)
+    pipe_path = "/var/tmp/physical-pipe"
     server_thread = threading.Thread(target=server, args=(pipe_path,))
     server_thread.start()
-
+    time.sleep(0.2)
     client(pipe_path)
-
     server_thread.join()
-    pipe_close(pipe_path)
 
 
 if __name__ == "__main__":
