@@ -1,43 +1,50 @@
+
 from utils import NetworkInterface
 from protocols import DNSProtocol, HTTPProtocol
+from main_server import ApplicationLayer as ServerApplicationLayer
 
 
 class ApplicationLayer:
-    def __init__(self, physical_layer):
-        self.physical_layer = physical_layer
+    net_if: NetworkInterface
+    dns_protocol: DNSProtocol
+    http_protocol: HTTPProtocol
+
+    def __init__(self, net_if: NetworkInterface) -> None:
+        self.net_if = net_if
         self.dns_protocol = DNSProtocol()
         self.http_protocol = HTTPProtocol()
+        
+    def send_http_request(self, method: str, url: str) -> str:
+        print(f"(Client App) Sending HTTP Request: ({method}, {url})\n")
 
-    def resolve_ip(self, url):
         ip = self.dns_protocol.resolve_ip(url)
         print(f"(Client App) Resolved IP {url} => {ip}\n")
-        return ip
-    
-    def send_http_request(self, method, url):
-        # blocking send implemeted with NetworkInterface
         
-        print(f"(Client App) Sending HTTP Request ({method}, {url})\n")
-        ip = self.resolve_ip(url)
-        
-        req1 = self.http_protocol.create_request(method, ip)
-        self.physical_layer.send(req1)
+        req = self.http_protocol.create_request(method, ip)
+        print(f"(Client App) Sending Request: {req=}\n")
+        self.net_if.send(req)
 
-    def send_server_kill(self):
+        data = self.net_if.receive()
+        print(f"(Client App) Received Response: {data=}\n")
+
+        return data
+
+    def send_server_kill(self) -> None:
         print("(Client App) Sending Server Kill\n")
-        self.physical_layer.send(NetworkInterface.CODE_CLOSE_SERVER)
-        
+        self.net_if.send(ServerApplicationLayer.CODE_SERVER_KILL)
 
 
-def client():
-    physical = NetworkInterface("/var/tmp/server-eth0", "/var/tmp/client-eth0")
+def client() -> None:
+    net_if = NetworkInterface("/var/tmp/server-eth0", "/var/tmp/client-eth0")
+    application = ApplicationLayer(net_if)
     
-    application = ApplicationLayer(physical)
-    
-    response = application.send_http_request("HEAD", "google.com")
-    
-    application.send_http_request("GET", "google.com")
-    
+    net_if.connect()
+    res_1 = application.send_http_request("HEAD", "google.com")
+    res_2 = application.send_http_request("GET", "google.com")
+    print(f"(Client Main) {res_1=}\n")
+    print(f"(Client Main) {res_2=}\n")
     application.send_server_kill()
+    net_if.disconnect()
 
 
 if __name__ == "__main__":
