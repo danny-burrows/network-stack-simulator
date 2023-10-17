@@ -1,5 +1,7 @@
 
+
 import os
+import time
 
 path = "/var/tmp/testpipe"
 
@@ -8,11 +10,17 @@ if not os.path.exists(path):
 
 print("Opening...")
 
-with open(path, "r") as pipe_out:
+with open(path, "w") as pipe_out:
     print("Open")
-    while True:
-        print("Reading")
-        data = pipe_out.read()
-        print(f"Received: {data=}")
+    pipe_out.write("Hello")
+
+print("Test")
+time.sleep(2)
+while True:
+    # time.sleep(0)
+    with open(path, "w") as pipe_out:
+        pipe_out.write("FRENCH")
+
+print("Sent")
 
 print("Closed")
