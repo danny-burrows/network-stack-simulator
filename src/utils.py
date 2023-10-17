@@ -3,6 +3,7 @@ import os
 import threading
 from io import TextIOWrapper
 from typing import Callable
+import time
 
 
 class NamedPipe:
@@ -53,12 +54,20 @@ class NamedPipe:
     
         print(f"(Pipe) Listening for data from {self.pipe_path}\n")
         while not self.kill_listen:
+            
+            # TODO: Potential for a bug where self.kill_listen is set
+            # ---> here <---
+            # and missed by the loop conditional...
+            # This is mitigated by the time.sleep() but we should fix
+            
             print("(Pipe) Reading...")
             data = self.recv_pipe.read()
             
             if len(data) > 0:
                 print(f"(Pipe) Received data on {self.pipe_path}: {data=}\n")
                 callback(data)
+            
+            time.sleep(0.2)
 
 
 class NetworkInterface:
