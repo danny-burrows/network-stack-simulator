@@ -1,4 +1,4 @@
-from utils import PhysicalLayer
+from utils import NetworkInterface
 from protocols import DNSProtocol, HTTPProtocol
 
 
@@ -14,6 +14,8 @@ class ApplicationLayer:
         return ip
     
     def send_http_request(self, method, url):
+        # blocking send implemeted with NetworkInterface
+        
         print(f"(Client App) Sending HTTP Request ({method}, {url})\n")
         ip = self.resolve_ip(url)
         
@@ -22,15 +24,16 @@ class ApplicationLayer:
 
     def send_server_kill(self):
         print("(Client App) Sending Server Kill\n")
-        self.physical_layer.send(PhysicalLayer.CODE_CLOSE_SERVER)
+        self.physical_layer.send(NetworkInterface.CODE_CLOSE_SERVER)
         
 
 
 def client():
-    physical = PhysicalLayer()
+    physical = NetworkInterface("/var/tmp/server-eth0", "/var/tmp/client-eth0")
+    
     application = ApplicationLayer(physical)
     
-    application.send_http_request("HEAD", "google.com")
+    response = application.send_http_request("HEAD", "google.com")
     
     application.send_http_request("GET", "google.com")
     

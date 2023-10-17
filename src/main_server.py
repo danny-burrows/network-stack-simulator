@@ -1,5 +1,8 @@
-from utils import PhysicalLayer
+from utils import NetworkInterface
 from protocols import HTTPProtocol
+
+
+
 
 
 class ApplicationLayer:
@@ -16,7 +19,8 @@ class ApplicationLayer:
 
 
 def server():
-    physical = PhysicalLayer()
+    physical = NetworkInterface("/var/tmp/client-eth0", "/var/tmp/server-eth0")
+
     application = ApplicationLayer(physical)
     
     application.listen_http()

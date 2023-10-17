@@ -1,13 +1,55 @@
 import os
+import threading
 
-DEFAULT_PIPE_PATH="/var/tmp/physical-pipe"
+class NetworkInterface:
 
+    def __init__(self, send_pipe_path, recv_pipe_path):
+        self.send_pipe = NamedPipe(send_pipe_path)
+        self.recv_pipe = NamedPipe(recv_pipe_path)
+        
+        self.recv_buffer = []
+        self.recv_thread = None
+    
+    @property
+    def is_listening(self):
+        return self.recv_thread is not None
 
-class PhysicalLayer:
+    def _recv_data(self, data):
+        self.recv_buffer.append(data)
+            
+    def _listen(self):
+        self.recv_pipe.listen(self._recv_data)
+        
+    def connect(self):
+        self.recv_thread = threading.Thread(target=self._listen)
+        self.recv_thread.start()
+        
+        # launch thread and listen for stuff... puts it in recv_buffer
+        
+        # except this is in a thread
+        self.recv_pipe.listen()
+        
+        pass        
+            
+    def send(self, payload):
+        # Non-blocking send
+        
+        self.send_pipe.send(payload)
+    
+    def recv_data():
+        # blocks until buffer has some data available
+        pass
+    
+    def disconnect(self):
+        # kill the connection thread
+        self.recv_thread.kill()
+    
+    
+class NamedPipe:
     CODE_PACKET_DELIM="PIPE_PACKET_DELIM\n"
     CODE_CLOSE_SERVER="PIPE_CODE_CLOSE_SERVER\n"
 
-    def __init__(self, pipe_path=DEFAULT_PIPE_PATH):
+    def __init__(self, pipe_path):
         self.pipe_path = pipe_path
         self.open_pipe()
 
@@ -21,25 +63,24 @@ class PhysicalLayer:
 
     def send(self, payload):
         print(f"(Pipe) Sending packet to {self.pipe_path}\n============\n{payload}============")
-        pipe_out = os.open(self.pipe_path, os.O_WRONLY)
-        os.write(pipe_out, payload.encode())
-        os.write(pipe_out, self.CODE_PACKET_DELIM.encode())
-        os.close(pipe_out)
+        with open(self.pipe_path, "w") as pipe:
+            pipe.write(payload)            
         print("(Pipe) Sent\n")
 
     def listen(self, callback):
-        print(f"(Pipe) Listening for packets from {self.pipe_path}\n")
-        
+        print(f"(Pipe) Listening for packets from {self.pipe_path}\n")        
         with open(self.pipe_path, 'r') as pipe_in:        
-            run_server = True
-            while run_server:
+            while True:
                 pipe_data = pipe_in.read()
-                packet_end = pipe_data.find(self.CODE_PACKET_DELIM)
-                while packet_end != -1:
-                    payload = pipe_data[:packet_end]
-                    print(f"(Pipe) Received payload\n============\n{payload}============\n")
-                    if payload == self.CODE_CLOSE_SERVER:
-                        run_server = False
-                    callback(payload)
-                    pipe_data = pipe_data[packet_end+len(self.CODE_PACKET_DELIM):]
-                    packet_end = pipe_data.find(self.CODE_PACKET_DELIM)
+                callback(pipe_data)
+
+    def stop_listening(self):
+        self.run_server = False
+
+
+
+pipe = NamedPipe("/var/tmp/testpipe")
+pipe.listen(lambda x: print("Callback"))
+
+
+
