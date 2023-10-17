@@ -34,7 +34,6 @@ class PhysicalLayer:
             run_server = True
             while run_server:
                 pipe_data = pipe_in.read()
-                print(f"{pipe_data=}")
                 packet_end = pipe_data.find(self.CODE_PACKET_DELIM)
                 while packet_end != -1:
                     payload = pipe_data[:packet_end]
@@ -43,6 +42,4 @@ class PhysicalLayer:
                         run_server = False
                     callback(payload)
                     pipe_data = pipe_data[packet_end+len(self.CODE_PACKET_DELIM):]
-                    print(f"{pipe_data=}")
                     packet_end = pipe_data.find(self.CODE_PACKET_DELIM)
-                    print(f"{packet_end=}")
