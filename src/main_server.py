@@ -2,7 +2,7 @@ from utils import PhysicalLayer
 from protocols import HTTPProtocol
 
 
-class ServerApplicationLayer:
+class ApplicationLayer:
     def __init__(self, physical_layer):
         self.http_protocol = HTTPProtocol()
         self.physical_layer = physical_layer
@@ -17,7 +17,7 @@ class ServerApplicationLayer:
 
 def server():
     physical = PhysicalLayer()
-    application = ServerApplicationLayer(physical)
+    application = ApplicationLayer(physical)
     
     application.listen_http()
 

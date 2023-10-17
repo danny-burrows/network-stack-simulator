@@ -13,7 +13,13 @@ class HTTPProtocol:
                 req = f"{method} / HTTP/1.1\n"
                 req += f"Host: {ip}\n"
                 req += "\n"
+            case _:
+                req = "A"
+                req = f"{method} / HTTP/1.1\n"
+                req += f"Host: {ip}\n"
+                req += "\n"
                 if body:
                     req += f"{body}\n"
+            
         return req
     

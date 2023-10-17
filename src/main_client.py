@@ -2,31 +2,39 @@ from utils import PhysicalLayer
 from protocols import DNSProtocol, HTTPProtocol
 
 
-class ClientApplicationLayer:
+class ApplicationLayer:
     def __init__(self, physical_layer):
         self.physical_layer = physical_layer
         self.dns_protocol = DNSProtocol()
         self.http_protocol = HTTPProtocol()
+
+    def resolve_ip(self, url):
+        ip = self.dns_protocol.resolve_ip(url)
+        print(f"(Client App) Resolved IP {url} => {ip}\n")
+        return ip
     
     def send_http_request(self, method, url):
         print(f"(Client App) Sending HTTP Request ({method}, {url})\n")
-
-        ip = self.dns_protocol.resolve_ip(url)
-        print(f"(Client App) Resolved IP {url} => {ip}\n")
-
-        req1 = self.http_protocol.create_request(method, ip, body="1")
+        ip = self.resolve_ip(url)
+        
+        req1 = self.http_protocol.create_request(method, ip)
         self.physical_layer.send(req1)
-        req2 = self.http_protocol.create_request(method, ip, body="2")
-        self.physical_layer.send(req2)
 
+    def send_server_kill(self):
+        print("(Client App) Sending Server Kill\n")
         self.physical_layer.send(PhysicalLayer.CODE_CLOSE_SERVER)
+        
 
 
 def client():
     physical = PhysicalLayer()
-    application = ClientApplicationLayer(physical)
+    application = ApplicationLayer(physical)
     
     application.send_http_request("HEAD", "google.com")
+    
+    application.send_http_request("GET", "google.com")
+    
+    application.send_server_kill()
 
 
 if __name__ == "__main__":
