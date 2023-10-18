@@ -8,72 +8,80 @@ import time
 
 class NamedPipe:
     pipe_path: str
-    is_open: bool
-    recv_pipe: TextIOWrapper
+    is_listening: bool
+    listener_interupt: bool
+    listener_thread: threading.Thread
+    listener_read_file: TextIOWrapper
 
     def __init__(self, pipe_path: str) -> None:
         self.pipe_path = pipe_path
-        self.is_open = False
-        self.recv_pipe = None
-        self.kill_listen = False
-
-    def open_recv_pipe(self) -> None:
-        if self.is_open:
-            return
-        if not os.path.exists(self.pipe_path):
-            os.mkfifo(self.pipe_path)
-        print(f"(Pipe) Opening recv_pipe in {self.pipe_path}...\n")
-        self.recv_pipe = open(self.pipe_path, "r")
-        print("(Pipe) recv_pipe opened!\n")
-        self.is_open = True
+        self.is_listening = False
+        self.listener_interupt = False
+        self.listener_thread = None
+        self.listener_read_file = None
     
-    def close_pipe(self) -> None:
-        self.kill_listen = True
-        if not self.is_open:
-            return
-        if self.recv_pipe:
-            self.recv_pipe.close()
-        self.is_open = False
+    def close(self) -> None:
+        if self.is_listening:
+            self.stop_listening()
 
-    def delete_pipe(self) -> None:
+    def create_pipe_file(self) -> None:
+        if os.path.exists(self.pipe_path):
+            os.remove(self.pipe_path)
+
+    def delete_pipe_file(self) -> None:
         if os.path.exists(self.pipe_path):
             os.remove(self.pipe_path)
 
     def send(self, data: str) -> None:
-        print("(Pipe) Opening pipe to write...")
-        
-        with open(self.pipe_path, "w") as pipe:
-            print(f"(Pipe) Writing {data=}...")
-            pipe.write(data)
-            pipe.flush()
-                         
-        print("(Pipe) Finished write, closed pipe.")
+        print(f"---(Pipe) Opening pipe write file ({self.pipe_path})...")
 
-    def listen(self, callback: Callable[[str], None]) -> None:
-        self.open_recv_pipe()
+        with open(self.pipe_path, "w") as send_file:
+            print(f"---(Pipe) Writing {data=}")
+            send_file.write(data)
+
+        print(f"---(Pipe) Finished write, closing file ({self.pipe_path})")
+
+    def start_listening(self, callback: Callable[[str], None]) -> None:
+        if self.is_listening:
+            return
+        self.listener_interupt = False
+        self.listener_thread = threading.Thread(target=self._listen, args=(callback,))
+        self.listener_thread.start()
+        self.is_listening = True
     
-        print(f"(Pipe) Listening for data from {self.pipe_path}\n")
-        while not self.kill_listen:
+    def stop_listening(self) -> None:
+        if not self.is_listening:
+            return
+        self.listener_interupt = True
+        self.listener_thread.join()
+        self.is_listening = False
+
+    def _listen(self, callback: Callable[[str], None]) -> None:
+        print(f"---(Pipe) Opening pipe read file ({self.pipe_path})...")
+        self.listener_read_file = open(self.pipe_path, "r")
+        print(f"---(Pipe) Pipe read file opened!")
+
+        print(f"---(Pipe) Listening for data...")
+        while not self.listener_interupt:
             
             # TODO: Potential for a bug where self.kill_listen is set
             # ---> here <---
             # and missed by the loop conditional...
             # This is mitigated by the time.sleep() but we should fix
             
-            print("(Pipe) Reading...")
-            data = self.recv_pipe.read()
-            
+            data = self.listener_read_file.read()
             if len(data) > 0:
-                print(f"(Pipe) Received data on {self.pipe_path}: {data=}\n")
+                print(f"---(Pipe) Received {data=}")
                 callback(data)
-            
             time.sleep(0.2)
+        
+        print(f"---(Pipe) Finished read, closing file ({self.pipe_path})")
+        self.listener_read_file.close()
 
 
 class NetworkInterface:
     send_pipe: NamedPipe
     recv_pipe: NamedPipe
-    recv_thread: threading.Thread
     recv_buffer: list[str]
     recv_event: threading.Event
 
@@ -88,11 +96,10 @@ class NetworkInterface:
     def connect(self) -> None:
         if self.is_connected:
             return
-        print("(Network Interface) Connecting...\n")
-        self.recv_thread = threading.Thread(target=self.recv_pipe.listen, args=(self._receive,))
-        self.recv_thread.start()
+        print("--(Network Interface) Connecting...")
+        self.recv_pipe.start_listening(self._receive)
         self.is_connected = True
-        print("(Network Interface) Connected!\n")
+        print("--(Network Interface) Connected!")
     
     def _receive(self, data: str) -> None:
         self.recv_buffer.append(data)
@@ -101,12 +108,10 @@ class NetworkInterface:
     def disconnect(self) -> None:
         if not self.is_connected:
             return
-        print("(Network Interface) Disconnecting...\n")
-        self.send_pipe.close_pipe()
-        self.recv_pipe.close_pipe()
-        self.recv_thread.join()
+        print("--(Network Interface) Disconnecting...")
+        self.recv_pipe.close()
         self.is_connected = False
-        print("(Network Interface) Disconnected!\n")
+        print("--(Network Interface) Disconnected!")
             
     def send(self, data: str) -> None:
         if not self.is_connected: 
