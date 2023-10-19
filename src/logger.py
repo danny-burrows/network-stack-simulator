@@ -19,14 +19,15 @@ class CustomFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format = "%(asctime)s (%(filename)s:%(lineno)d) - (%(name)s) %(levelname)s: %(message)s"
+    format_pre = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
+    format_post = "%(message)s"
 
     FORMATS = {
-        logging.DEBUG: blue + format + reset,
-        logging.INFO: green + format + reset,
-        logging.WARNING: bold_yellow + format + reset,
-        logging.ERROR: bold_red + format + reset,
-        logging.CRITICAL: bold_red + format + reset
+        logging.DEBUG: blue + format_pre + reset + format_post,
+        logging.INFO: green + format_pre + reset + format_post,
+        logging.WARNING: bold_yellow + format_pre + reset + format_post,
+        logging.ERROR: bold_red + format_pre + reset + format_post,
+        logging.CRITICAL: bold_red + format_pre + reset + format_post
     }
 
     def format(self, record):
