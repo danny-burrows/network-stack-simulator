@@ -27,13 +27,17 @@ class NamedPipe:
             self.stop_listening()
 
     def create_pipe_file(self) -> None:
-        if not os.path.exists(self.pipe_path):
-            print(f"Creating... {self.pipe_path=}")
+        try:
+            print(f"---(Pipe) Creating... {self.pipe_path=}")
             os.mkfifo(self.pipe_path)
+        except FileExistsError:
+            print(f"---(Pipe) WARN: File '{self.pipe_path}' already exists so cannot be created")
 
     def delete_pipe_file(self) -> None:
-        if os.path.exists(self.pipe_path):
+        try:
             os.remove(self.pipe_path)
+        except FileNotFoundError:
+            print(f"---(Pipe) WARN: File '{self.pipe_path}' doesn't exist so cannot be deleted")
 
     def send(self, data: str) -> None:
         print(f"---(Pipe) Opening pipe write file ({self.pipe_path})...")
