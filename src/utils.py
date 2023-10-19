@@ -67,17 +67,12 @@ class NamedPipe:
         print(f"---(Pipe) Pipe file '{self.pipe_path}' opened!")
 
         while not self.listener_interupt:
-            
-            # TODO: Potential for a bug where self.kill_listen is set
-            # ---> here <---
-            # and missed by the loop conditional...
-            # This is mitigated by the time.sleep() but we should fix
-            
             data = self.listener_read_file.read()
             if len(data) > 0:
                 print(f"---(Pipe) Received {data=}")
                 callback(data)
-            time.sleep(0.2)
+
+            time.sleep(0.1)
         
         print(f"---(Pipe) Finished reading, closing pipe file '{self.pipe_path}'")
         self.listener_read_file.close()
