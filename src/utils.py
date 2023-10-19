@@ -30,27 +30,27 @@ class NamedPipe(Logger):
 
     def create_pipe_file(self) -> None:
         try:
-            self.log.debug("Creating... {self.pipe_path=}")
+            self.log.debug(f"Creating... {self.pipe_path=}")
             os.mkfifo(self.pipe_path)
         except FileExistsError:
             # FIXME: Maybe this isn't actually a warning...
-            self.log.warning("File '{self.pipe_path}' already exists so cannot be created")
+            self.log.warning(f"File '{self.pipe_path}' already exists so cannot be created")
 
     def delete_pipe_file(self) -> None:
         try:
             os.remove(self.pipe_path)
         except FileNotFoundError:
             # FIXME: Maybe this isn't actually a warning...
-            self.log.warning("File '{self.pipe_path}' doesn't exist so cannot be deleted")
+            self.log.warning(f"File '{self.pipe_path}' doesn't exist so cannot be deleted")
 
     def send(self, data: str) -> None:
-        self.log.debug("Opening pipe write file ({self.pipe_path})...")
+        self.log.debug(f"Opening pipe write file ({self.pipe_path})...")
 
         with open(self.pipe_path, "w") as send_file:
-            self.log.debug("Writing {data=}")
+            self.log.debug(f"Writing {data=}")
             send_file.write(data)
 
-        self.log.debug("Finished write, closing file ({self.pipe_path})")
+        self.log.debug(f"Finished write, closing file ({self.pipe_path})")
 
     def start_listening(self, callback: Callable[[str], None]) -> None:
         if self.is_listening:
@@ -68,21 +68,21 @@ class NamedPipe(Logger):
         self.is_listening = False
 
     def _listen(self, callback: Callable[[str], None]) -> None:
-        self.log.debug("Opening pipe file '{self.pipe_path}' for reading...")
+        self.log.debug(f"Opening pipe file '{self.pipe_path}' for reading...")
         self.listener_read_file = open(self.pipe_path, "r")
         # Alternative option... can cause weird behavior but prevents the block
         # self.listener_read_file = os.fdopen(os.open(self.pipe_path, os.O_RDONLY | os.O_NONBLOCK))
-        self.log.debug("Pipe file '{self.pipe_path}' opened!")
+        self.log.debug(f"Pipe file '{self.pipe_path}' opened!")
 
         while not self.listener_interupt:
             data = self.listener_read_file.read()
             if len(data) > 0:
-                self.log.debug("Received {data=}")
+                self.log.debug(f"Received {data=}")
                 callback(data)
 
             time.sleep(0.1)
         
-        self.log.debug("Finished reading, closing pipe file '{self.pipe_path}'")
+        self.log.debug(f"Finished reading, closing pipe file '{self.pipe_path}'")
         self.listener_read_file.close()
 
 
