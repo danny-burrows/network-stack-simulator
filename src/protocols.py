@@ -1,26 +1,28 @@
 
 class DNSProtocol:
-    def resolve_ip(self, url: str) -> str:
+    
+    @staticmethod
+    def resolve_ip(url: str) -> str:
         return "0.0.0.0"
 
 
 class HTTPProtocol:
-    def create_request(self, method: str, ip: str, body: str=None) -> str:
-        req = None
-        match method:
-            
-            case "HEAD":
-                req = "A"
-                req = f"{method} / HTTP/1.1\n"
-                req += f"Host: {ip}\n"
-                req += "\n"
+    
+    @staticmethod
+    def create_request(method: str, ip: str, body: str=None) -> str:
+        match method.upper():
 
-            case _:
-                req = "A"
-                req = f"{method} / HTTP/1.1\n"
-                req += f"Host: {ip}\n"
-                req += "\n"
+            case "HEAD":
+                req = (f"{method} / HTTP/1.1\n"
+                       f"Host: {ip}\n\n")
+
+            case "GET":
+                req = (f"{method} / HTTP/1.1\n"
+                       f"Host: {ip}\n\n")
                 if body:
                     req += f"{body}\n"
+                    
+            case unsupported_method:
+                raise NotImplementedError(f"HTTP method '{unsupported_method}' is not implemented!")
 
         return req

@@ -10,6 +10,7 @@ if not os.path.exists(path):
 print("Opening...")
 
 print("Open")
+# with os.fdopen(os.open(path, os.O_RDONLY | os.O_NONBLOCK)) as pipe_out:
 with open(path, "r") as pipe_out:
     while True:
         print("Reading")

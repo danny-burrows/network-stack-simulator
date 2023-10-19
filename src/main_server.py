@@ -1,26 +1,21 @@
 
 from utils import NetworkInterface
-from protocols import HTTPProtocol, DNSProtocol
 
 
 class ApplicationLayer:    
     CODE_SERVER_KILL="PIPE_CODE_SERVER_KILL"
 
     net_if: NetworkInterface
-    dns_protocol: DNSProtocol
-    http_protocol: HTTPProtocol
     
     def __init__(self, net_if: NetworkInterface) -> None:
         self.net_if = net_if
-        self.dns_protocol = DNSProtocol()
-        self.http_protocol = HTTPProtocol()
 
     def listen_http(self) -> None:
         print("-(Server App) Listening for HTTP...")
         req = None
         while (self.net_if.is_connected) and (req := self.net_if.receive()):
             if req == ApplicationLayer.CODE_SERVER_KILL:
-                print(f"-(Server App) Received Server Kill")
+                print("-(Server App) Received Server Kill")
                 return None
 
             print(f"-(Server App) Received Request: {req=}")

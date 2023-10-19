@@ -6,25 +6,21 @@ from main_server import ApplicationLayer as ServerApplicationLayer
 
 class ApplicationLayer:
     net_if: NetworkInterface
-    dns_protocol: DNSProtocol
-    http_protocol: HTTPProtocol
 
     def __init__(self, net_if: NetworkInterface) -> None:
         self.net_if = net_if
-        self.dns_protocol = DNSProtocol()
-        self.http_protocol = HTTPProtocol()
         
     def send_http_request(self, method: str, url: str) -> str:
         print(f"-(Client App) Sending HTTP Request: ({method}, {url})")
 
-        ip = self.dns_protocol.resolve_ip(url)
+        ip = DNSProtocol.resolve_ip(url)
         print(f"-(Client App) Resolved IP {url} => {ip}")
         
-        req = self.http_protocol.create_request(method, ip)
+        req = HTTPProtocol.create_request(method, ip)
         print(f"-(Client App) Sending Request: {req=}")
         self.net_if.send(req)
 
-        print(f"-(Client App) Awaiting Response...")
+        print("-(Client App) Awaiting Response...")
         data = self.net_if.receive()
         print(f"-(Client App) Received Response: {data=}")
 

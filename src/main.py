@@ -1,5 +1,3 @@
-
-import time
 import threading
 from main_client import client
 from main_server import server

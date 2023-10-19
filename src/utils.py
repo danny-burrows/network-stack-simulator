@@ -1,9 +1,10 @@
 
 import os
 import threading
+import time
+
 from io import TextIOWrapper
 from typing import Callable
-import time
 
 
 class NamedPipe:
@@ -19,14 +20,16 @@ class NamedPipe:
         self.listener_interupt = False
         self.listener_thread = None
         self.listener_read_file = None
+        self.create_pipe_file()
     
     def close(self) -> None:
         if self.is_listening:
             self.stop_listening()
 
     def create_pipe_file(self) -> None:
-        if os.path.exists(self.pipe_path):
-            os.remove(self.pipe_path)
+        if not os.path.exists(self.pipe_path):
+            print(f"Creating... {self.pipe_path=}")
+            os.mkfifo(self.pipe_path)
 
     def delete_pipe_file(self) -> None:
         if os.path.exists(self.pipe_path):
@@ -57,11 +60,12 @@ class NamedPipe:
         self.is_listening = False
 
     def _listen(self, callback: Callable[[str], None]) -> None:
-        print(f"---(Pipe) Opening pipe read file ({self.pipe_path})...")
+        print(f"---(Pipe) Opening pipe file '{self.pipe_path}' for reading...")
         self.listener_read_file = open(self.pipe_path, "r")
-        print(f"---(Pipe) Pipe read file opened!")
+        # Alternative option... can cause weird behavior but prevents the block
+        # self.listener_read_file = os.fdopen(os.open(self.pipe_path, os.O_RDONLY | os.O_NONBLOCK))
+        print(f"---(Pipe) Pipe file '{self.pipe_path}' opened!")
 
-        print(f"---(Pipe) Listening for data...")
         while not self.listener_interupt:
             
             # TODO: Potential for a bug where self.kill_listen is set
@@ -75,7 +79,7 @@ class NamedPipe:
                 callback(data)
             time.sleep(0.2)
         
-        print(f"---(Pipe) Finished read, closing file ({self.pipe_path})")
+        print(f"---(Pipe) Finished reading, closing pipe file '{self.pipe_path}'")
         self.listener_read_file.close()
 
 
