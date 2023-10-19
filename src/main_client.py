@@ -1,5 +1,3 @@
-import logging
-
 from logger import Logger
 from utils import NetworkInterface
 from protocols import DNSProtocol, HTTPProtocol
@@ -35,7 +33,9 @@ class ApplicationLayer(Logger):
 
 
 def client() -> None:
-    logging.info("Start")
+    logger = Logger()
+    
+    logger.log.info("Start")
 
     net_if = NetworkInterface("/var/tmp/server-eth0", "/var/tmp/client-eth0")
     application = ApplicationLayer(net_if)
@@ -43,12 +43,12 @@ def client() -> None:
     net_if.connect()
     res_1 = application.send_http_request("HEAD", "google.com")
     res_2 = application.send_http_request("GET", "google.com")
-    logging.info(f"{res_1=}")
-    logging.info(f"{res_2=}")
+    logger.log.info(f"{res_1=}")
+    logger.log.info(f"{res_2=}")
     application.send_server_kill()
     net_if.disconnect()
 
-    logging.info("End")
+    logger.log.info("End")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,3 @@
-import logging
-
 from logger import Logger
 from utils import NetworkInterface
 
@@ -29,7 +27,9 @@ class ApplicationLayer(Logger):
 
 
 def server() -> None:
-    logging.info("Start")
+    logger = Logger()
+    
+    logger.log.info("Start")
 
     net_if = NetworkInterface("/var/tmp/client-eth0", "/var/tmp/server-eth0")
     application = ApplicationLayer(net_if)
@@ -38,7 +38,7 @@ def server() -> None:
     application.listen_http()
     net_if.disconnect()
 
-    logging.info("End")
+    logger.log.info("End")
 
 
 if __name__ == "__main__":
