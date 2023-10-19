@@ -14,22 +14,22 @@ class ApplicationLayer(Logger):
         self.net_if = net_if
 
     def listen_http(self) -> None:
-        self.log.debug("(Server App) Listening for HTTP...")
+        self.log.debug("Listening for HTTP...")
         req = None
         while (self.net_if.is_connected) and (req := self.net_if.receive()):
             if req == ApplicationLayer.CODE_SERVER_KILL:
-                self.log.debug("(Server App) Received Server Kill")
+                self.log.debug("Received Server Kill")
                 return None
 
-            self.log.info(f"(Server App) Received Request: {req=}")
+            self.log.info(f"Received Request: {req=}")
 
             res = "Response\n"
-            self.log.info(f"(Server App) Sending Response: {res=}")
+            self.log.info(f"Sending Response: {res=}")
             self.net_if.send(res)
 
 
 def server() -> None:
-    logging.info("(Server Main) Start")
+    logging.info("Start")
 
     net_if = NetworkInterface("/var/tmp/client-eth0", "/var/tmp/server-eth0")
     application = ApplicationLayer(net_if)
@@ -38,7 +38,7 @@ def server() -> None:
     application.listen_http()
     net_if.disconnect()
 
-    logging.info("(Server Main) End")
+    logging.info("End")
 
 
 if __name__ == "__main__":
