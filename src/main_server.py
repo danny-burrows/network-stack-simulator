@@ -16,16 +16,19 @@ class ApplicationLayer(Logger):
         self.log.debug("Listening for HTTP...")
         req_str = None
         while (self.net_if.is_connected) and (req_str := self.net_if.receive()):
+            
             if req_str == ApplicationLayer.CODE_SERVER_KILL:
                 self.log.debug("Received Server Kill")
                 return None
 
             self.log.info(f"Received HTTP Request: {req_str=}")
-            req = HTTPProtocol.try_parse_request_str(req_str)
+            
+            req = HTTPProtocol.try_parse_request(req_str)
             res = HTTPProtocol.try_create_response("302")
             res_str = res.to_string()
             
             self.log.info(f"Sending HTTP Response: {res_str=}")
+            
             self.net_if.send(res_str)
 
 

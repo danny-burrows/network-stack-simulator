@@ -4,11 +4,13 @@ import logging
 
 
 LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
-OUTPUT_FILE = os.environ.get("SYS4_OUTPUT_FILE")
+LOG_SHORT = os.environ.get("SYS4_LOG_SHORT", False)
+LOG_OUTPUT_FILE = os.environ.get("SYS4_LOG_OUTPUT_FILE")
+
 
 logging.basicConfig(
     level=LOG_LEVEL,
-    filename=OUTPUT_FILE,
+    filename=LOG_OUTPUT_FILE,
 )
 
 
@@ -20,6 +22,7 @@ class CustomFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
     format_pre = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
+    format_pre_short = "[%(name)s/%(levelname)s]: "
     format_post = "%(message)s"
 
     FORMATS = {
@@ -30,8 +33,19 @@ class CustomFormatter(logging.Formatter):
         logging.CRITICAL: bold_red + format_pre + reset + format_post
     }
 
+    FORMATS_SHORT = {
+        logging.DEBUG: blue + format_pre_short + reset + format_post,
+        logging.INFO: green + format_pre_short + reset + format_post,
+        logging.WARNING: bold_yellow + format_pre_short + reset + format_post,
+        logging.ERROR: bold_red + format_pre_short + reset + format_post,
+        logging.CRITICAL: bold_red + format_pre_short + reset + format_post
+    }
+
     def format(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
+        if LOG_SHORT:
+            log_fmt = self.FORMATS_SHORT.get(record.levelno)
+        else:
+            log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
