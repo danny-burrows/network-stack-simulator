@@ -35,7 +35,7 @@ class HTTPProtocol:
                     self.method = method
                     self.body = None
                     if body:
-                        self.log.warn(f"HTTPRequest method HEAD should not receive {body=}")
+                        self.logger.warn(f"HTTPRequest method HEAD should not receive {body=}")
 
                 case "GET":
                     self.method = method
