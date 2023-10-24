@@ -50,8 +50,6 @@ def client() -> None:
         net_if.connect()
         res_1 = application.send_http_request("HEAD", "google.com")
         res_2 = application.send_http_request("GET", "google.com")
-        client_logger.logger.info(f"{res_1.to_string()=}")
-        client_logger.logger.info(f"{res_2.to_string()=}")
         application.send_server_kill()
         net_if.disconnect()
 
