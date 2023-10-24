@@ -13,39 +13,47 @@ logging.basicConfig(
     filename=LOG_OUTPUT_FILE,
 )
 
+class CustomFilter(object):
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, logRecord):
+        return logRecord.levelno <= self.__level
+
 
 class CustomFormatter(logging.Formatter):
-    blue = "\x1b[34;20m"
-    green = "\x1b[32;20m"
-    bold_yellow = "\x1b[33;1m"
-    red = "\x1b[31;20m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format_pre = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
-    format_pre_short = "[%(name)s/%(levelname)s]: "
-    format_post = "%(message)s"
+    FORMAT_PRE = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
+    FORMAT_PRE_SHORT = "[%(name)s/%(levelname)s]: "
+    FORMAT_POST = "%(message)s"
+    
+    COL_BLUE = "\x1b[34;20m"
+    COL_GREEN = "\x1b[32;20m"
+    COL_BOLD_YELLOW = "\x1b[33;1m"
+    COL_RED = "\x1b[31;20m"
+    COL_BOLD_RED = "\x1b[31;1m"
+    COL_RESET = "\x1b[0m"
 
-    FORMATS = {
-        logging.DEBUG: blue + format_pre + reset + format_post,
-        logging.INFO: green + format_pre + reset + format_post,
-        logging.WARNING: bold_yellow + format_pre + reset + format_post,
-        logging.ERROR: bold_red + format_pre + reset + format_post,
-        logging.CRITICAL: bold_red + format_pre + reset + format_post
+    LEVEL_COLOURS = {
+        logging.DEBUG: COL_BLUE,
+        logging.INFO: COL_GREEN,
+        logging.WARNING: COL_BOLD_YELLOW,
+        logging.ERROR: COL_BOLD_RED,
+        logging.CRITICAL: COL_BOLD_RED
     }
 
-    FORMATS_SHORT = {
-        logging.DEBUG: blue + format_pre_short + reset + format_post,
-        logging.INFO: green + format_pre_short + reset + format_post,
-        logging.WARNING: bold_yellow + format_pre_short + reset + format_post,
-        logging.ERROR: bold_red + format_pre_short + reset + format_post,
-        logging.CRITICAL: bold_red + format_pre_short + reset + format_post
-    }
+    formats: dict[int, str]
+
+    def __init__(self, shortLog=False):
+        self.formats = {}
+        for level in CustomFormatter.LEVEL_COLOURS:
+            self.formats[level] =\
+                CustomFormatter.LEVEL_COLOURS[level]\
+                + (CustomFormatter.FORMAT_PRE_SHORT if shortLog else CustomFormatter.FORMAT_PRE)\
+                + CustomFormatter.COL_RESET\
+                + CustomFormatter.FORMAT_POST
 
     def format(self, record):
-        if LOG_SHORT:
-            log_fmt = self.FORMATS_SHORT.get(record.levelno)
-        else:
-            log_fmt = self.FORMATS.get(record.levelno)
+        log_fmt = self.formats.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
@@ -62,7 +70,7 @@ class Logger:
         self.log = logging.getLogger(class_name)
         
         ch = logging.StreamHandler()
-        ch.setFormatter(CustomFormatter())
+        ch.setFormatter(CustomFormatter(LOG_SHORT))
         
         if not self.log.handlers:
             self.log.addHandler(ch)
