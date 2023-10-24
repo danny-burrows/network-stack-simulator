@@ -21,7 +21,7 @@ class CustomFormatter(logging.Formatter):
     red = "\x1b[31;20m"
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
-    format_pre = "%(asctime)s(%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
+    format_pre = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
     format_pre_short = "[%(name)s/%(levelname)s]: "
     format_post = "%(message)s"
 
