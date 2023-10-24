@@ -12,7 +12,7 @@ class HTTPProtocol:
     VERSION="HTTP/1.1"
     VALID_METHODS = [ "HEAD", "GET" ]
     VALID_RES_CODES = [ "302" ]
-    RES_MSG_MAP = { "302": "OK" }
+    RES_MSG_MAP = { "302": "Found" }
 
     class HTTPRequest(Logger):
         method: str
