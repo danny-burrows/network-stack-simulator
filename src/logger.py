@@ -9,10 +9,7 @@ LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
 LOG_OUTPUT_FILE = os.environ.get("SYS4_LOG_OUTPUT_FILE")
 
 
-logging.basicConfig(
-    level=LOG_LEVEL,
-    filename=LOG_OUTPUT_FILE,
-)
+logging.basicConfig(level=LOG_LEVEL)
 
 
 class CustomFormatter(logging.Formatter):
@@ -37,14 +34,21 @@ class CustomFormatter(logging.Formatter):
 
     formats: dict[int, str]
 
-    def __init__(self):
+    def __init__(self, colour=True):
         self.formats = {}
-        for level in CustomFormatter.LEVEL_COLOURS:
-            self.formats[level] =\
-                CustomFormatter.LEVEL_COLOURS[level]\
-                + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
-                + CustomFormatter.COL_RESET\
-                + CustomFormatter.FORMAT_POST
+        if colour:
+            for level in CustomFormatter.LEVEL_COLOURS:
+                self.formats[level] =\
+                    CustomFormatter.LEVEL_COLOURS[level]\
+                    + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
+                    + CustomFormatter.COL_RESET\
+                    + CustomFormatter.FORMAT_POST
+        else:
+            for level in CustomFormatter.LEVEL_COLOURS:
+                self.formats[level] =\
+                    (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
+                    + CustomFormatter.FORMAT_POST
+        
 
     def format(self, record):
         log_fmt = self.formats.get(record.levelno)
@@ -75,8 +79,14 @@ class Logger:
             return
 
         self.logger = logging.getLogger(class_name)
-        formatter = CustomFormatter()
-        stream_handler = logging.StreamHandler()
+        
+        if LOG_OUTPUT_FILE:
+            formatter = CustomFormatter(colour=False)
+            stream_handler = logging.FileHandler(LOG_OUTPUT_FILE)
+        else:
+            formatter = CustomFormatter()
+            stream_handler = logging.StreamHandler()
+
         stream_handler.setFormatter(formatter)
         
         if not self.logger.handlers:
