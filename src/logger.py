@@ -4,7 +4,8 @@ import logging
 
 
 LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
-LOG_SHORT = os.environ.get("SYS4_LOG_SHORT", False)
+LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
+LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
 LOG_OUTPUT_FILE = os.environ.get("SYS4_LOG_OUTPUT_FILE")
 
 
@@ -12,13 +13,6 @@ logging.basicConfig(
     level=LOG_LEVEL,
     filename=LOG_OUTPUT_FILE,
 )
-
-class CustomFilter(object):
-    def __init__(self, level):
-        self.__level = level
-
-    def filter(self, logRecord):
-        return logRecord.levelno <= self.__level
 
 
 class CustomFormatter(logging.Formatter):
@@ -43,12 +37,12 @@ class CustomFormatter(logging.Formatter):
 
     formats: dict[int, str]
 
-    def __init__(self, shortLog=False):
+    def __init__(self):
         self.formats = {}
         for level in CustomFormatter.LEVEL_COLOURS:
             self.formats[level] =\
                 CustomFormatter.LEVEL_COLOURS[level]\
-                + (CustomFormatter.FORMAT_PRE_SHORT if shortLog else CustomFormatter.FORMAT_PRE)\
+                + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
                 + CustomFormatter.COL_RESET\
                 + CustomFormatter.FORMAT_POST
 
@@ -58,7 +52,16 @@ class CustomFormatter(logging.Formatter):
         return formatter.format(record)
 
 
+class DummyObject(object):
+    def __getattr__(self, name):
+        return lambda *args, **kwargs: None
+
+
 class Logger:
+    logger: logging.Logger
+    logger_formatter = logging.Formatter
+    logger_stream_handler: logging.StreamHandler
+
     def __init__(self):
         if self.__class__.__name__ == "Logger":
             class_name = "Root"
@@ -66,12 +69,16 @@ class Logger:
             class_name = self.__class__.__name__.title()
         else:
             class_name = " ".join(re.findall("[A-Z][a-z]*", self.__class__.__name__))
+
+        if LOG_CLASS_FILTER and class_name != LOG_CLASS_FILTER:
+            self.logger = DummyObject()
+            return
+
+        self.logger = logging.getLogger(class_name)
+        formatter = CustomFormatter()
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
         
-        self.log = logging.getLogger(class_name)
-        
-        ch = logging.StreamHandler()
-        ch.setFormatter(CustomFormatter(LOG_SHORT))
-        
-        if not self.log.handlers:
-            self.log.addHandler(ch)
-            self.log.propagate = False
+        if not self.logger.handlers:
+            self.logger.addHandler(stream_handler)
+            self.logger.propagate = False
