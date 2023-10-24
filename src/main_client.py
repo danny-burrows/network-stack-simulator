@@ -13,18 +13,21 @@ class ApplicationLayer(Logger):
         
     def send_http_request(self, method: str, url: str) -> HTTPProtocol.HTTPResponse:
         self.log.info(f"Sending HTTP Request: ({method}, {url})")
+        
+        req = HTTPProtocol.try_create_request(method, { "host": url })
+        req_str = req.to_string()
+        self.log.debug(f"Created HTTP Request String: {req_str=}")
 
         ip = DNSProtocol.resolve_ip(url)
         self.log.debug(f"Resolved IP {url} => {ip}")
-        
-        req = HTTPProtocol.try_create_request(method, { "host": ip })
-        req_str = req.to_string()
-        self.log.debug(f"Sending HTTP Request String: {req_str=}")
+
+        self.log.debug(f"Sending Payload...")
         self.net_if.send(req_str)
 
         self.log.debug("Awaiting Response...")
         res_str = self.net_if.receive()
-        res = HTTPProtocol.try_parse_response_str(res_str)
+        
+        res = HTTPProtocol.try_parse_response(res_str)
         self.log.info(f"Received HTTP Response: {res_str=}")
 
         return res
