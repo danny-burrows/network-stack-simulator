@@ -11,21 +11,23 @@ class ApplicationLayer(Logger):
         super().__init__()
         self.net_if = net_if
         
-    def send_http_request(self, method: str, url: str) -> str:
+    def send_http_request(self, method: str, url: str) -> HTTPProtocol.HTTPResponse:
         self.log.info(f"Sending HTTP Request: ({method}, {url})")
 
         ip = DNSProtocol.resolve_ip(url)
-        self.log.info(f"Resolved IP {url} => {ip}")
+        self.log.debug(f"Resolved IP {url} => {ip}")
         
-        req = HTTPProtocol.create_request(method, ip)
-        self.log.info(f"Sending Request: {req=}")
-        self.net_if.send(req)
+        req = HTTPProtocol.try_create_request(method, { "host": ip })
+        req_str = req.to_string()
+        self.log.debug(f"Sending HTTP Request String: {req_str=}")
+        self.net_if.send(req_str)
 
         self.log.debug("Awaiting Response...")
-        data = self.net_if.receive()
-        self.log.info(f"Received Response: {data=}")
+        res_str = self.net_if.receive()
+        res = HTTPProtocol.try_parse_response_str(res_str)
+        self.log.info(f"Received HTTP Response: {res_str=}")
 
-        return data
+        return res
 
     def send_server_kill(self) -> None:
         self.log.debug("Sending Server Kill")
@@ -35,7 +37,7 @@ class ApplicationLayer(Logger):
 def client() -> None:
     logger = Logger()
     
-    logger.log.info("Start")
+    logger.log.info("Client Start")
 
     net_if = NetworkInterface("/var/tmp/server-eth0", "/var/tmp/client-eth0")
     application = ApplicationLayer(net_if)
@@ -43,12 +45,12 @@ def client() -> None:
     net_if.connect()
     res_1 = application.send_http_request("HEAD", "google.com")
     res_2 = application.send_http_request("GET", "google.com")
-    logger.log.info(f"{res_1=}")
-    logger.log.info(f"{res_2=}")
+    logger.log.info(f"{res_1.to_string()=}")
+    logger.log.info(f"{res_2.to_string()=}")
     application.send_server_kill()
     net_if.disconnect()
 
-    logger.log.info("End")
+    logger.log.info("Client End")
 
 
 if __name__ == "__main__":

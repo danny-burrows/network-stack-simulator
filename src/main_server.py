@@ -1,5 +1,6 @@
 from logger import Logger
 from utils import NetworkInterface
+from protocols import HTTPProtocol
 
 
 class ApplicationLayer(Logger):    
@@ -13,23 +14,25 @@ class ApplicationLayer(Logger):
 
     def listen_http(self) -> None:
         self.log.debug("Listening for HTTP...")
-        req = None
-        while (self.net_if.is_connected) and (req := self.net_if.receive()):
-            if req == ApplicationLayer.CODE_SERVER_KILL:
+        req_str = None
+        while (self.net_if.is_connected) and (req_str := self.net_if.receive()):
+            if req_str == ApplicationLayer.CODE_SERVER_KILL:
                 self.log.debug("Received Server Kill")
                 return None
 
-            self.log.info(f"Received Request: {req=}")
-
-            res = "Response\n"
-            self.log.info(f"Sending Response: {res=}")
-            self.net_if.send(res)
+            self.log.info(f"Received HTTP Request: {req_str=}")
+            req = HTTPProtocol.try_parse_request_str(req_str)
+            res = HTTPProtocol.try_create_response("302")
+            res_str = res.to_string()
+            
+            self.log.info(f"Sending HTTP Response: {res_str=}")
+            self.net_if.send(res_str)
 
 
 def server() -> None:
     logger = Logger()
     
-    logger.log.info("Start")
+    logger.log.info("Server Start")
 
     net_if = NetworkInterface("/var/tmp/client-eth0", "/var/tmp/server-eth0")
     application = ApplicationLayer(net_if)
@@ -38,7 +41,7 @@ def server() -> None:
     application.listen_http()
     net_if.disconnect()
 
-    logger.log.info("End")
+    logger.log.info("Server End")
 
 
 if __name__ == "__main__":
