@@ -16,7 +16,7 @@ class CustomFormatter(logging.Formatter):
     FORMAT_PRE = "%(asctime)s (%(filename)s:%(lineno)d) [%(name)s/%(levelname)s]: "
     FORMAT_PRE_SHORT = "[%(name)s/%(levelname)s]: "
     FORMAT_POST = "%(message)s"
-    
+
     COL_BLUE = "\x1b[34;20m"
     COL_GREEN = "\x1b[32;20m"
     COL_BOLD_YELLOW = "\x1b[33;1m"
@@ -29,7 +29,7 @@ class CustomFormatter(logging.Formatter):
         logging.INFO: COL_GREEN,
         logging.WARNING: COL_BOLD_YELLOW,
         logging.ERROR: COL_BOLD_RED,
-        logging.CRITICAL: COL_BOLD_RED
+        logging.CRITICAL: COL_BOLD_RED,
     }
 
     formats: dict[int, str]
@@ -38,17 +38,17 @@ class CustomFormatter(logging.Formatter):
         self.formats = {}
         if colour:
             for level in CustomFormatter.LEVEL_COLOURS:
-                self.formats[level] =\
-                    CustomFormatter.LEVEL_COLOURS[level]\
-                    + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
-                    + CustomFormatter.COL_RESET\
+                self.formats[level] = (
+                    CustomFormatter.LEVEL_COLOURS[level]
+                    + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)
+                    + CustomFormatter.COL_RESET
                     + CustomFormatter.FORMAT_POST
+                )
         else:
             for level in CustomFormatter.LEVEL_COLOURS:
-                self.formats[level] =\
-                    (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)\
-                    + CustomFormatter.FORMAT_POST
-        
+                self.formats[level] = (
+                    CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT
+                ) + CustomFormatter.FORMAT_POST
 
     def format(self, record):
         log_fmt = self.formats.get(record.levelno)
@@ -79,7 +79,7 @@ class Logger:
             return
 
         self.logger = logging.getLogger(class_name)
-        
+
         if LOG_OUTPUT_FILE:
             formatter = CustomFormatter(colour=False)
             stream_handler = logging.FileHandler(LOG_OUTPUT_FILE)
@@ -88,7 +88,7 @@ class Logger:
             stream_handler = logging.StreamHandler()
 
         stream_handler.setFormatter(formatter)
-        
+
         if not self.logger.handlers:
             self.logger.addHandler(stream_handler)
             self.logger.propagate = False
