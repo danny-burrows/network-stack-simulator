@@ -4,4 +4,4 @@ set -euf -o pipefail
 
 source "./cicd/helper-functions.sh"
 
-wrap_command python -m black . --check --diff
+wrap_command python -m black . --check
