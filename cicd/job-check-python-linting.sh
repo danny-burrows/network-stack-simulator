@@ -5,7 +5,7 @@ set -euf -o pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "${script_dir}/helper-functions.sh"
 
-container_tag="python-check-lint-${GIT_COMMIT_HASH}"
+container_tag="python-${GIT_COMMIT_HASH}"
 
 wrap_command docker build --rm --tag "${container_tag}" "${REPO_DIR}/docker/python/"
 
