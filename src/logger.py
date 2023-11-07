@@ -40,20 +40,14 @@ class CustomFormatter(logging.Formatter):
             for level in CustomFormatter.LEVEL_COLOURS:
                 self.formats[level] = (
                     CustomFormatter.LEVEL_COLOURS[level]
-                    + (
-                        CustomFormatter.FORMAT_PRE
-                        if LOG_VERBOSE
-                        else CustomFormatter.FORMAT_PRE_SHORT
-                    )
+                    + (CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT)
                     + CustomFormatter.COL_RESET
                     + CustomFormatter.FORMAT_POST
                 )
         else:
             for level in CustomFormatter.LEVEL_COLOURS:
                 self.formats[level] = (
-                    CustomFormatter.FORMAT_PRE
-                    if LOG_VERBOSE
-                    else CustomFormatter.FORMAT_PRE_SHORT
+                    CustomFormatter.FORMAT_PRE if LOG_VERBOSE else CustomFormatter.FORMAT_PRE_SHORT
                 ) + CustomFormatter.FORMAT_POST
 
     def format(self, record):

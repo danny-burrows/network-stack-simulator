@@ -86,18 +86,14 @@ class HTTPProtocol:
 
             method = method.upper()
             if method not in HTTPProtocol.VALID_METHODS:
-                raise NotImplementedError(
-                    f"HTTPRequest initialized with unsupported method '{method}'!"
-                )
+                raise NotImplementedError(f"HTTPRequest initialized with unsupported method '{method}'!")
 
             match method:
                 case "HEAD":
                     self.method = method
                     self.body = None
                     if body:
-                        self.logger.warn(
-                            f"HTTPRequest method HEAD should not receive {body=}"
-                        )
+                        self.logger.warn(f"HTTPRequest method HEAD should not receive {body=}")
 
                 case "GET":
                     self.method = method
@@ -108,27 +104,19 @@ class HTTPProtocol:
             status, headers, body = HTTPProtocol._try_parse_http_message(req_str)
 
             if len(status) != 3:
-                raise ValueError(
-                    f"HTTPRequest parse has invalid status line of length '{len(status)}': {req_str}!"
-                )
+                raise ValueError(f"HTTPRequest parse has invalid status line of length '{len(status)}': {req_str}!")
 
             method = status[0]
             version = status[2]
 
             if method not in HTTPProtocol.VALID_METHODS:
-                raise ValueError(
-                    f"HTTPRequest parsed unsupported method '{method}': {req_str}!"
-                )
+                raise ValueError(f"HTTPRequest parsed unsupported method '{method}': {req_str}!")
 
             if status[1] != "/":
-                raise ValueError(
-                    f"HTTPRequest parsed invalid status line '{status}': {req_str}!"
-                )
+                raise ValueError(f"HTTPRequest parsed invalid status line '{status}': {req_str}!")
 
             if version != HTTPProtocol.VERSION:
-                raise ValueError(
-                    f"HTTPRequest parsed unsupported version '{version}': {req_str}!"
-                )
+                raise ValueError(f"HTTPRequest parsed unsupported version '{version}': {req_str}!")
 
             return cls(method, headers, body)
 
@@ -161,23 +149,17 @@ class HTTPProtocol:
             status, headers, body = HTTPProtocol._try_parse_http_message(res_str)
 
             if len(status) != 3:
-                raise ValueError(
-                    f"HTTPResponse parse has invalid status line of length '{len(status)}': {res_str}!"
-                )
+                raise ValueError(f"HTTPResponse parse has invalid status line of length '{len(status)}': {res_str}!")
 
             version = status[0]
             res_code = status[1]
             res_msg = status[2]
 
             if version != HTTPProtocol.VERSION:
-                raise ValueError(
-                    f"HTTPResponse parsed unsupported version '{version}': {res_str}!"
-                )
+                raise ValueError(f"HTTPResponse parsed unsupported version '{version}': {res_str}!")
 
             if res_code not in HTTPProtocol.VALID_RES_CODES:
-                raise ValueError(
-                    f"HTTPResponse parsed unsupported response code '{res_code}': {res_str}!"
-                )
+                raise ValueError(f"HTTPResponse parsed unsupported response code '{res_code}': {res_str}!")
 
             if res_msg != HTTPProtocol.RES_MSG_MAP[res_code]:
                 raise ValueError(
@@ -204,18 +186,14 @@ class HTTPProtocol:
         split_content = msg_str.split("\n\n")
 
         if len(split_content) != 2:
-            raise ValueError(
-                f"HTTP message content split incorrect count '{len(split_content)}': {msg_str}!"
-            )
+            raise ValueError(f"HTTP message content split incorrect count '{len(split_content)}': {msg_str}!")
 
         meta_content, body_content = split_content
 
         meta_lines = meta_content.split("\n")
 
         if len(meta_lines) < 1:
-            raise ValueError(
-                f"HTTP message meta contains less than 1 line '{meta_lines}': {msg_str}!"
-            )
+            raise ValueError(f"HTTP message meta contains less than 1 line '{meta_lines}': {msg_str}!")
 
         status = meta_lines[0].split(" ")
 
@@ -224,9 +202,7 @@ class HTTPProtocol:
             line = meta_lines[i]
             line = line.split(": ")
             if len(line) != 2:
-                raise ValueError(
-                    f"HTTP message header line split incorrect count '{line}': {msg_str}!"
-                )
+                raise ValueError(f"HTTP message header line split incorrect count '{line}': {msg_str}!")
             headers[line[0].lower()] = line[1]
 
         return status, headers, body_content
@@ -240,9 +216,7 @@ class HTTPProtocol:
         return HTTPProtocol.HTTPResponse.try_parse(res_str)
 
     @staticmethod
-    def try_create_request(
-        method: str, headers: dict[str, str], body: str = None
-    ) -> HTTPRequest:
+    def try_create_request(method: str, headers: dict[str, str], body: str = None) -> HTTPRequest:
         return HTTPProtocol.HTTPRequest(method, headers, body)
 
     @staticmethod

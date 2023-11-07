@@ -32,17 +32,13 @@ class NamedPipe(Logger):
             self.logger.debug(f"Creating pipe file {self.pipe_path=}...")
             os.mkfifo(self.pipe_path)
         except FileExistsError:
-            self.logger.debug(
-                f"File '{self.pipe_path}' already exists so cannot be created"
-            )
+            self.logger.debug(f"File '{self.pipe_path}' already exists so cannot be created")
 
     def delete_pipe_file(self) -> None:
         try:
             os.remove(self.pipe_path)
         except FileNotFoundError:
-            self.logger.debug(
-                f"File '{self.pipe_path}' doesn't exist so cannot be deleted"
-            )
+            self.logger.debug(f"File '{self.pipe_path}' doesn't exist so cannot be deleted")
 
     def send(self, frame: bytes) -> None:
         self.logger.debug(f"Opening pipe file for writing '{self.pipe_path}'")
