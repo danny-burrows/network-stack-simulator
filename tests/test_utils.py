@@ -55,8 +55,8 @@ def test_network_interface_basic_recv(tmpdir):
     client_network_interface.send("Test client message")
     server_network_interface.send("Test server message")
 
-    client_recv_message = client_network_interface.receive()
-    server_recv_message = server_network_interface.receive()
+    client_recv_message = client_network_interface.recv()
+    server_recv_message = server_network_interface.recv()
 
     assert client_recv_message == "Test server message"
     assert server_recv_message == "Test client message"

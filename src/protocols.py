@@ -1,12 +1,65 @@
+from __future__ import annotations
 from logger import Logger
+from utils import NetworkInterface
 
+# Client socket has 1 connection
+# Server socket accept() produces a new connection for each client
+
+# Socket recv is blocking, waits for amount of bytes
+# Socket send is non blocking, but has timeouts
+
+class TCPSocket:
+    transport: TransportLayer
+    
+    def __init__(self, transport: TransportLayer) -> None:
+        self.transport = transport
+
+    def bind(self, host: str, port: str) -> None:
+        self.transport.bind(self, host, port)
+
+    def connect(self, host: str, port: str) -> None:
+        self.bind(host, port)
+
+    def recv(self, size: int) -> bytes:
+        pass
+
+    def listen(self) -> None:
+        pass
+
+    def accept(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+# LOGIC
+class Connection(Logger):
+    net_if: NetworkInterface
+    
+    def __init__(self):
+        self.net_if = NetworkInterface("A", "B")
+        pass
+
+class TransportLayer(Logger):
+    sockets: dict[str, TCPSocket]
+
+    def __init__(self, net_if: NetworkInterface) -> None:
+        self.net_if = net_if
+
+    def create_socket(self) -> None:
+        sock = TCPSocket(self)
+        return sock
+
+    def bind(self, sock: TCPSocket, host: str, port: str) -> None:
+        self.sockets[port] = sock
+
+    def _listen():
+        pass
 
 class DNSProtocol:
-    
     @staticmethod
     def resolve_ip(url: str) -> str:
         return "0.0.0.0"
-
 
 class HTTPProtocol:
     VERSION="HTTP/1.1"

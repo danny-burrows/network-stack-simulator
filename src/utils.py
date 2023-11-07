@@ -6,7 +6,6 @@ from logger import Logger
 from io import TextIOWrapper
 from typing import Callable
 
-
 class NamedPipe(Logger):
     pipe_path: str
     is_listening: bool
@@ -40,12 +39,12 @@ class NamedPipe(Logger):
         except FileNotFoundError:
             self.logger.debug(f"File '{self.pipe_path}' doesn't exist so cannot be deleted")
 
-    def send(self, data: str) -> None:
+    def send(self, frame: bytes) -> None:
         self.logger.debug(f"Opening pipe file for writing '{self.pipe_path}'")
 
-        with open(self.pipe_path, "w") as send_file:
-            self.logger.debug(f"Writing {data=}")
-            send_file.write(data)
+        with open(self.pipe_path, "wb") as send_file:
+            self.logger.debug(f"Writing {frame=}")
+            send_file.write(frame)
 
         self.logger.debug(f"Finished writing, closing pipe file '{self.pipe_path}'")
 
@@ -67,22 +66,21 @@ class NamedPipe(Logger):
 
     def _listen(self, callback: Callable[[str], None]) -> None:
         self.logger.debug(f"Opening pipe file for reading '{self.pipe_path}'")
-        self.listener_read_file = open(self.pipe_path, "r")
+        self.listener_read_file = open(self.pipe_path, "rb")
         # Alternative option... can cause weird behavior but prevents the block
         # self.listener_read_file = os.fdopen(os.open(self.pipe_path, os.O_RDONLY | os.O_NONBLOCK))
         self.logger.debug(f"Pipe read file '{self.pipe_path}' opened!")
 
         while not self.listener_interupt:
-            data = self.listener_read_file.read()
-            if len(data) > 0:
-                self.logger.debug(f"Received {data=}")
-                callback(data)
+            frame = self.listener_read_file.read()
+            if len(frame) > 0:
+                self.logger.debug(f"Received {frame=}")
+                callback(frame)
 
             time.sleep(0.1)
         
         self.logger.debug(f"Finished reading, closing pipe file '{self.pipe_path}'")
         self.listener_read_file.close()
-
 
 class NetworkInterface(Logger):
     send_pipe: NamedPipe
@@ -107,8 +105,8 @@ class NetworkInterface(Logger):
         self.is_connected = True
         self.logger.debug("Connected!")
     
-    def _receive(self, data: str) -> None:
-        self.recv_buffer.append(data)
+    def _receive(self, frame: str) -> None:
+        self.recv_buffer.append(frame)
         self.recv_event.set()
 
     def disconnect(self) -> None:
@@ -119,18 +117,18 @@ class NetworkInterface(Logger):
         self.is_connected = False
         self.logger.debug("Disconnected!")
             
-    def send(self, data: str) -> None:
+    def send(self, frame: bytes) -> None:
         if not self.is_connected: 
             return
-        self.send_pipe.send(data)
+        self.send_pipe.send(frame)
     
-    def receive(self, count: int=1, timeout: int=60) -> str:
+    def recv(self, count: int=1, timeout: int=60) -> bytes:
         if not self.is_connected:
             return
         while len(self.recv_buffer) < count:
             self.recv_event.wait(timeout)
-        data = self.recv_buffer[:count]
+        frame = self.recv_buffer[:count]
         self.recv_buffer = self.recv_buffer[count:]
         if count == 1:
-            data = data[0]
-        return data
+            frame = frame[0]
+        return frame

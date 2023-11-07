@@ -1,25 +1,36 @@
 import sys
 from logger import Logger
 from utils import NetworkInterface
-from protocols import HTTPProtocol
+from protocols import HTTPProtocol, TCPSocket, TransportLayer
 
-
-class ApplicationLayer(Logger):    
+class ServerApplicationLayer(Logger):    
     CODE_SERVER_KILL="PIPE_CODE_SERVER_KILL"
 
     net_if: NetworkInterface
     
-    def __init__(self, net_if: NetworkInterface) -> None:
+    def __init__(self, transport: TransportLayer) -> None:
         super().__init__()
-        self.net_if = net_if
+        self.transport = transport
+    
+    def execute(self) -> None:
+        # TODO: Socket stuff
+        self.sock = self.transport.create_socket()
+        self.accept()
+        # self.sock.bind("127.0.0.1", 3000)
 
-    def listen_http(self) -> None:
+        self.start_http_server()
+
+        self.sock.close()
+
+    def start_http_server(self) -> None:
         self.logger.debug("Listening for HTTP...")
-        req_str = None
-        while (self.net_if.is_connected) and (req_str := self.net_if.receive()):
-            
-            if req_str == ApplicationLayer.CODE_SERVER_KILL:
+        req_bytes = None
+        while req_bytes := self.sock.recv():
+            req_str = req_bytes.decode()
+
+            if req_str == ServerApplicationLayer.CODE_SERVER_KILL:
                 self.logger.debug("Received Server Kill")
+                self.sock.close()
                 return None
 
             self.logger.info(f"Received HTTP Request: {req_str=}")
@@ -27,11 +38,11 @@ class ApplicationLayer(Logger):
             req = HTTPProtocol.try_parse_request(req_str)
             res = HTTPProtocol.try_create_response("302")
             res_str = res.to_string()
+            res_bytes = res_str.encode()
             
             self.logger.info(f"Sending HTTP Response: {res_str=}")
             
-            self.net_if.send(res_str)
-
+            self.net_if.send(res_bytes)
 
 def server() -> None:
     try:
@@ -39,12 +50,10 @@ def server() -> None:
         
         logger.logger.info("Server Start")
 
-        net_if = NetworkInterface("/var/tmp/client-eth0", "/var/tmp/server-eth0")
-        application = ApplicationLayer(net_if)
+        transport = TransportLayer()
+        application = ServerApplicationLayer(transport)
 
-        net_if.connect()
-        application.listen_http()
-        net_if.disconnect()
+        application.execute()
 
         logger.logger.info("Server End")
 
