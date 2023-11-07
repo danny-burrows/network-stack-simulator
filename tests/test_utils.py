@@ -5,10 +5,10 @@ from src.utils import NetworkInterface, NamedPipe
 
 def test_named_pipe_only_creates_pipe_file_once(tmpdir):
     named_pipe_path = f"{tmpdir}/named-pipe"
-    
+
     NamedPipe(named_pipe_path)
     creation_time = os.path.getctime(named_pipe_path)
-    
+
     # Should be able to get a second handle to the file without recreation.
     NamedPipe(named_pipe_path)
 
@@ -17,7 +17,7 @@ def test_named_pipe_only_creates_pipe_file_once(tmpdir):
 
 def test_named_pipe_only_deletes_pipe_file_once(tmpdir):
     named_pipe_handle = NamedPipe(f"{tmpdir}/named-pipe")
-    
+
     named_pipe_handle.delete_pipe_file()
     named_pipe_handle.delete_pipe_file()
 
