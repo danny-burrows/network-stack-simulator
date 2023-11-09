@@ -1,21 +1,21 @@
 import sys
 from logger import Logger
 from utils import NetworkInterface
-from protocols import HTTPProtocol, TransportLayer
+from protocols import HTTPProtocol
+from kernel import Socket, Kernel
 
-
-class ServerApplicationLayer(Logger):
+class ServerApp(Logger):
     CODE_SERVER_KILL = "PIPE_CODE_SERVER_KILL"
 
-    net_if: NetworkInterface
+    kernel: Kernel
 
-    def __init__(self, transport: TransportLayer) -> None:
+    def __init__(self, kernel) -> None:
+        self.kernel = kernel
         super().__init__()
-        self.transport = transport
 
     def execute(self) -> None:
         # TODO: Socket stuff
-        self.sock = self.transport.create_socket()
+        self.sock = Socket(self.kernel)
         self.accept()
         # self.sock.bind("127.0.0.1", 3000)
 
@@ -29,7 +29,7 @@ class ServerApplicationLayer(Logger):
         while req_bytes := self.sock.recv():
             req_str = req_bytes.decode()
 
-            if req_str == ServerApplicationLayer.CODE_SERVER_KILL:
+            if req_str == ServerApp.CODE_SERVER_KILL:
                 self.logger.debug("Received Server Kill")
                 self.sock.close()
                 return None
@@ -49,13 +49,12 @@ class ServerApplicationLayer(Logger):
 def server() -> None:
     try:
         logger = Logger()
-
         logger.logger.info("Server Start")
 
-        transport = TransportLayer()
-        application = ServerApplicationLayer(transport)
-
-        application.execute()
+        kernel = Kernel()
+        
+        app = ServerApp(kernel)
+        app.execute()
 
         logger.logger.info("Server End")
 

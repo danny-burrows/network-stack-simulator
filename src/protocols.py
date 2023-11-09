@@ -1,6 +1,6 @@
 from __future__ import annotations
 from logger import Logger
-from utils import NetworkInterface
+from utils import NetworkInterface, named_pipe_from_address
 
 # Client socket has 1 connection
 # Server socket accept() produces a new connection for each client
@@ -38,10 +38,13 @@ class TCPSocket:
 class Connection(Logger):
     net_if: NetworkInterface
 
-    def __init__(self):
-        self.net_if = NetworkInterface("A", "B")
-        pass
-
+    def __init__(self, source_addr, destination_addr):
+        self.net_if = NetworkInterface(
+            named_pipe_from_address(source_addr), 
+            named_pipe_from_address(destination_addr)
+        )
+        
+        # TODO: Part of initialising a connection is TCP handshake?
 
 class TransportLayer(Logger):
     sockets: dict[str, TCPSocket]
