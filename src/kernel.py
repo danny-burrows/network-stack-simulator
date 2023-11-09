@@ -3,7 +3,6 @@ import threading
 import os
 import time
 
-from dataclasses import dataclass
 from logger import Logger
 from io import TextIOWrapper
 from typing import Callable
@@ -130,7 +129,7 @@ class Kernel(Logger):
     def wait_tcp_connection(self, src_addr: int, src_port: int) -> TCPConnection:
         self.logger.info(f"Waiting TCP Connection: {src_addr}:{src_port}")
         self.ensure_wire_exists(src_addr, src_port, True)
-        
+
         with self.tcp_connection_structs_mutex:
             tcp_connection_key = (src_port, None)
             if tcp_connection_key not in self.tcp_connection_structs:
@@ -140,7 +139,7 @@ class Kernel(Logger):
 
             else:
                 raise Exception("BAD")
-        
+
         tcp_connection_struct.handshake_complete_event.wait()
         return tcp_connection_struct
 
@@ -167,13 +166,13 @@ class Kernel(Logger):
         pipe_path = named_pipe_from_addr_port(addr, port)
         if pipe_path in self.named_pipes:
             return
-        
+
         pipe = NamedPipe(pipe_path)
         self.named_pipes[port] = pipe
-        
+
         if to_listen:
             pipe.start_listening(self._recv_data)
-    
+
     def _recv_data(self, data: bytes):
         with self.incoming_data_mutex:
             self.incoming_data += data
@@ -182,17 +181,16 @@ class Kernel(Logger):
         self.logger.info(f"Processing packet: {packet.src_port}:{packet.dest_port}")
         # key = (packet.src_port, packet.dest_port)
 
-        full_key = (packet.dest_port,packet.src_port)
-        accept_key = (packet.dest_port,None)
+        full_key = (packet.dest_port, packet.src_port)
+        accept_key = (packet.dest_port, None)
 
         if full_key in self.tcp_connection_structs:
             self.logger.info(f"Passing packet to conn {full_key}")
             self.tcp_connection_structs[full_key].recv_data.append(packet)
-        
+
         elif accept_key in self.tcp_connection_structs:
             self.logger.info(f"Passing packet to conn {accept_key}")
             self.tcp_connection_structs[accept_key].recv_data.append(packet)
-        
 
     def _process_tcp_connection(self, conn: TCPConnectionStruct) -> None:
         if not conn.is_physically_connected:
@@ -204,7 +202,7 @@ class Kernel(Logger):
                 packet: TCPPacketStruct = conn.recv_data[0]
                 conn.recv_data = conn.recv_data[1:]
                 self.logger.info(f"Connection received data {packet.src_port}-{packet.dest_port}")
-        ''
+        ""
         if conn.is_physically_connected:
             if not conn.is_handshake_complete and not conn.is_handshaking:
                 first_packet = TCPProtocol.create_packet(conn.src_port, conn.dest_port)
@@ -212,11 +210,9 @@ class Kernel(Logger):
                 self.named_pipes[conn.dest_port].send(first_packet)
                 conn.is_handshaking = True
 
-
     def run(self) -> None:
         # Running in a thread
         while True:
-
             # Parse packets from buffer
             tcp_packets: TCPPacketStruct = []
             with self.incoming_data_mutex:
@@ -233,5 +229,5 @@ class Kernel(Logger):
             # Process connections
             for key in self.tcp_connection_structs:
                 self._process_tcp_connection(self.tcp_connection_structs[key])
-            
+
             time.sleep(0.2)

@@ -133,11 +133,11 @@ class TCPProtocol:
             checksum,
             urgent_pointer,
             options,
-            data
+            data,
         )
-        
+
         return packet, packet_data[ptr:]
-    
+
     def create_packet(_src_port: int, _dest_port: int) -> bytes:
         src_port = _src_port.to_bytes(2, "big")
         dest_port = _dest_port.to_bytes(2, "big")
@@ -151,7 +151,19 @@ class TCPProtocol:
         options = bytes(0)
         data = bytes(0)
 
-        packet_bytes = src_port + dest_port + seq_number + ack_number + len_unused + flags + recv_window + checksum + urgent_pointer + options + data
+        packet_bytes = (
+            src_port
+            + dest_port
+            + seq_number
+            + ack_number
+            + len_unused
+            + flags
+            + recv_window
+            + checksum
+            + urgent_pointer
+            + options
+            + data
+        )
         return packet_bytes
 
     @staticmethod
