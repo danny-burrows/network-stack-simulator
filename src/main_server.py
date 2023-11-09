@@ -1,8 +1,8 @@
 import sys
 from logger import Logger
-from utils import NetworkInterface
 from protocols import HTTPProtocol
 from kernel import Socket, Kernel
+
 
 class ServerApp(Logger):
     CODE_SERVER_KILL = "PIPE_CODE_SERVER_KILL"
@@ -52,7 +52,7 @@ def server() -> None:
         logger.logger.info("Server Start")
 
         kernel = Kernel()
-        
+
         app = ServerApp(kernel)
         app.execute()
 

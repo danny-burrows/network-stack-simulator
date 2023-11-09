@@ -1,0 +1,11 @@
+from kernel import Kernel
+import threading
+from protocols import TCPSocket
+
+kernel = Kernel()
+th = threading.Thread(target=kernel.run)
+th.start()
+
+sock = TCPSocket(kernel)
+sock.bind("0.0.0.0", 3000)
+sock.accept()

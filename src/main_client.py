@@ -17,7 +17,7 @@ class ClientApp(Logger):
 
     def execute(self) -> None:
         self.sock = TCPSocket(self.kernel)
-        
+
         self.sock.connect("127.0.0.1", 3000)
 
         self.send_http_request("HEAD", "google.com")
@@ -36,14 +36,14 @@ class ClientApp(Logger):
         self.sock.send(req_str.encode())
 
         self.logger.debug("Awaiting Response...")
-        
+
         res_bytes = bytearray()
         while True:
             bytes = self.sock.recv(1024)
             res_bytes.append(bytes)
             if len(bytes) < 1024:
                 break
-        
+
         res_bytes = self.sock.recv_all()
         res_str = res_bytes.decode()
 
@@ -63,12 +63,12 @@ def client() -> None:
 
         kernel = Kernel()
         kernel.run()
-        
+
         app = ClientApp(kernel)
         app.execute()
 
         kernel.close()
-        
+
         root_logger.logger.info("Client End")
 
     except KeyboardInterrupt:

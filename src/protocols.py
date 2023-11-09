@@ -2,34 +2,34 @@ from __future__ import annotations
 from logger import Logger
 from dataclasses import dataclass
 from random import randint
-from kernel import TCPConnectionStruct
+import kernel
 
 
-def get_random_port():
+def get_random_port() -> int:
     # Temporary / private port range
-    return str(randint(49152, 65653))
+    return randint(49152, 65653)
 
 
 class TCPSocket:
-    
+    kernel: kernel.Kernel
     host: str
-    port: str
+    port: int
     conn: TCPConnection
 
     @property
     def is_binded(self) -> bool:
         return (self.host is not None) and (self.port is not None)
 
-    def __init__(self, kernel) -> None:
+    def __init__(self, kernel: kernel.Kernel) -> None:
         self.kernel = kernel
 
-    def bind(self, host: str, port: str) -> None:
+    def bind(self, host: str, port: int) -> None:
         self.host = host
-        self.port = port
+        self.port = int(port)
 
     def accept(self) -> TCPConnection:
         if not self.is_binded:
-            raise Exception("Cannot accept() whennot binded.")
+            raise Exception("Cannot accept() when not binded.")
         return self.kernel.wait_tcp_connection(self.host, self.port)
 
     def connect(self, host: str, port: str) -> None:
@@ -38,24 +38,23 @@ class TCPSocket:
 
     def recv(self, size: int) -> bytes:
         return self.conn.recv(size)
-    
+
     def recv_all(self) -> bytes:
         return self.conn.recv_all()
-    
+
     def close(self) -> None:
         return self.conn.close()
 
 
 class TCPConnection:
-    
     def __init__(self, connection_data_ref):
         self.connection_data_ref = connection_data_ref
-    
+
     def recv(self, bufsize: int) -> bytes:
-        pass # TODO
+        pass  # TODO
         # if not self.is_physically_connected or not self.is_handshake_complete:
         #     raise Exception("TCP Connection not established!")
-        
+
         # while len(self.recv_buffer) < bufsize:
         #     self.recv_event.wait()
         # frame = self.recv_buffer[:bufsize]
@@ -63,18 +62,18 @@ class TCPConnection:
         # if bufsize == 1:
         #     frame = frame[0]
         # return frame
-    
+
     def recv_all(self):
-        pass # TODO
+        pass  # TODO
         # res_bytes = bytearray()
         # while True:
         #     bytes = self.recv(1024)
         #     res_bytes.append(bytes)
         #     if len(bytes) < 1024:
         #         break
-        
+
     def send(self, data):
-        pass # TODO
+        pass  # TODO
         # if not self.is_physically_connected or not self.is_handshake_complete:
         #     raise Exception("TCP Connection not established!")
 
@@ -83,7 +82,6 @@ class TCPConnection:
 
 @dataclass
 class TCPPacketStruct:
-    
     src_port: bytes
     dest_port: bytes
     seq_number: bytes
@@ -98,17 +96,20 @@ class TCPPacketStruct:
 
 
 class TCPProtocol:
-
     @staticmethod
-    def parse_packet(data: bytes) -> TCPPacketStruct:
+    def parse_packet(packet_data: bytes) -> TCPPacketStruct:
         ptr = 0
+
+        print(f"TCPProtocol parse data {packet_data}")
+
         def read(count: int):
-            read_data = data[ptr:ptr+count]
+            nonlocal ptr
+            read_data = packet_data[ptr : ptr + count]
             ptr += count
             return read_data
 
-        src_port = read(2)
-        dest_port = read(2)
+        src_port = int.from_bytes(read(2), byteorder="big")
+        dest_port = int.from_bytes(read(2), byteorder="big")
         seq_number = read(4)
         ack_number = read(4)
         len_unused = read(1)
@@ -116,28 +117,55 @@ class TCPProtocol:
         recv_window = read(2)
         checksum = read(2)
         urgent_pointer = read(2)
-        options = None # TODO: Variable size
-        data = None # TODO: Variable size
+        options = None  # TODO: Variable size
+        data = None  # TODO: Variable size
 
-        packet = TCPPacketStruct(src_port,dest_port,seq_number,ack_number,len_unused,flags,recv_window,checksum,urgent_pointer,options,data)
-        return packet, data[ptr:]
+        print(f"Ptr incremented to {ptr} leaving {packet_data[ptr:]}")
 
+        packet = TCPPacketStruct(
+            src_port,
+            dest_port,
+            seq_number,
+            ack_number,
+            len_unused,
+            flags,
+            recv_window,
+            checksum,
+            urgent_pointer,
+            options,
+            data
+        )
+        
+        return packet, packet_data[ptr:]
+    
+    def create_packet(_src_port: int, _dest_port: int) -> bytes:
+        src_port = _src_port.to_bytes(2, "big")
+        dest_port = _dest_port.to_bytes(2, "big")
+        seq_number = bytes(4)
+        ack_number = bytes(4)
+        len_unused = bytes(1)
+        flags = bytes(1)
+        recv_window = bytes(2)
+        checksum = bytes(2)
+        urgent_pointer = bytes(2)
+        options = bytes(0)
+        data = bytes(0)
+
+        packet_bytes = src_port + dest_port + seq_number + ack_number + len_unused + flags + recv_window + checksum + urgent_pointer + options + data
+        return packet_bytes
 
     @staticmethod
-    def process_connection(conn: TCPConnectionStruct) -> None:
-
+    def process_connection(conn: kernel.TCPConnectionStruct) -> None:
         pass
-    
+
 
 class DNSProtocol:
-
     @staticmethod
     def resolve_ip(url: str) -> str:
         return "0.0.0.0"
 
 
 class HTTPProtocol:
-    
     VERSION = "HTTP/1.1"
     VALID_METHODS = ["HEAD", "GET"]
     VALID_RES_CODES = ["302"]
