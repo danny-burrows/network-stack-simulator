@@ -1,75 +1,143 @@
 from __future__ import annotations
 from logger import Logger
-from utils import NetworkInterface, named_pipe_from_address
+from dataclasses import dataclass
+from random import randint
+from kernel import TCPConnectionStruct
 
-# Client socket has 1 connection
-# Server socket accept() produces a new connection for each client
 
-# Socket recv is blocking, waits for amount of bytes
-# Socket send is non blocking, but has timeouts
+def get_random_port():
+    # Temporary / private port range
+    return str(randint(49152, 65653))
 
 
 class TCPSocket:
-    transport: TransportLayer
+    
+    host: str
+    port: str
+    conn: TCPConnection
 
-    def __init__(self, transport: TransportLayer) -> None:
-        self.transport = transport
+    @property
+    def is_binded(self) -> bool:
+        return (self.host is not None) and (self.port is not None)
+
+    def __init__(self, kernel) -> None:
+        self.kernel = kernel
 
     def bind(self, host: str, port: str) -> None:
-        self.transport.bind(self, host, port)
+        self.host = host
+        self.port = port
+
+    def accept(self) -> TCPConnection:
+        if not self.is_binded:
+            raise Exception("Cannot accept() whennot binded.")
+        return self.kernel.wait_tcp_connection(self.host, self.port)
 
     def connect(self, host: str, port: str) -> None:
-        self.bind(host, port)
+        self.bind("0.0.0.0", get_random_port())
+        self.conn = self.kernel.create_tcp_connection(self.host, self.port, host, port)
 
     def recv(self, size: int) -> bytes:
-        pass
-
-    def listen(self) -> None:
-        pass
-
-    def accept(self) -> None:
-        pass
-
+        return self.conn.recv(size)
+    
+    def recv_all(self) -> bytes:
+        return self.conn.recv_all()
+    
     def close(self) -> None:
-        pass
+        return self.conn.close()
 
 
-# LOGIC
-class Connection(Logger):
-    net_if: NetworkInterface
-
-    def __init__(self, source_addr, destination_addr):
-        self.net_if = NetworkInterface(
-            named_pipe_from_address(source_addr), 
-            named_pipe_from_address(destination_addr)
-        )
+class TCPConnection:
+    
+    def __init__(self, connection_data_ref):
+        self.connection_data_ref = connection_data_ref
+    
+    def recv(self, bufsize: int) -> bytes:
+        pass # TODO
+        # if not self.is_physically_connected or not self.is_handshake_complete:
+        #     raise Exception("TCP Connection not established!")
         
-        # TODO: Part of initialising a connection is TCP handshake?
+        # while len(self.recv_buffer) < bufsize:
+        #     self.recv_event.wait()
+        # frame = self.recv_buffer[:bufsize]
+        # self.recv_buffer = self.recv_buffer[bufsize:]
+        # if bufsize == 1:
+        #     frame = frame[0]
+        # return frame
+    
+    def recv_all(self):
+        pass # TODO
+        # res_bytes = bytearray()
+        # while True:
+        #     bytes = self.recv(1024)
+        #     res_bytes.append(bytes)
+        #     if len(bytes) < 1024:
+        #         break
+        
+    def send(self, data):
+        pass # TODO
+        # if not self.is_physically_connected or not self.is_handshake_complete:
+        #     raise Exception("TCP Connection not established!")
 
-class TransportLayer(Logger):
-    sockets: dict[str, TCPSocket]
+        # self.send_data.queue(data)
 
-    def __init__(self, net_if: NetworkInterface) -> None:
-        self.net_if = net_if
 
-    def create_socket(self) -> None:
-        sock = TCPSocket(self)
-        return sock
+@dataclass
+class TCPPacketStruct:
+    
+    src_port: bytes
+    dest_port: bytes
+    seq_number: bytes
+    ack_number: bytes
+    len_unused: bytes
+    flags: bytes
+    recv_window: bytes
+    checksum: bytes
+    urgent_pointer: bytes
+    options: bytes
+    data: bytes
 
-    def bind(self, sock: TCPSocket, host: str, port: str) -> None:
-        self.sockets[port] = sock
 
-    def _listen():
+class TCPProtocol:
+
+    @staticmethod
+    def parse_packet(data: bytes) -> TCPPacketStruct:
+        ptr = 0
+        def read(count: int):
+            read_data = data[ptr:ptr+count]
+            ptr += count
+            return read_data
+
+        src_port = read(2)
+        dest_port = read(2)
+        seq_number = read(4)
+        ack_number = read(4)
+        len_unused = read(1)
+        flags = read(1)
+        recv_window = read(2)
+        checksum = read(2)
+        urgent_pointer = read(2)
+        options = None # TODO: Variable size
+        data = None # TODO: Variable size
+
+        packet = TCPPacketStruct(src_port,dest_port,seq_number,ack_number,len_unused,flags,recv_window,checksum,urgent_pointer,options,data)
+        return packet, data[ptr:]
+
+
+    @staticmethod
+    def process_connection(conn: TCPConnectionStruct) -> None:
+
         pass
-
+    
 
 class DNSProtocol:
+
     @staticmethod
     def resolve_ip(url: str) -> str:
         return "0.0.0.0"
 
 
 class HTTPProtocol:
+    
     VERSION = "HTTP/1.1"
     VALID_METHODS = ["HEAD", "GET"]
     VALID_RES_CODES = ["302"]

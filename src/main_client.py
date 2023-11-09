@@ -1,8 +1,8 @@
 import sys
 from logger import Logger
-from protocols import HTTPProtocol
+from protocols import HTTPProtocol, TCPSocket
+from kernel import Kernel
 from main_server import ServerApp
-from kernel import Kernel, TCPSocket
 
 root_logger = Logger()
 
@@ -29,13 +29,11 @@ class ClientApp(Logger):
     def send_http_request(self, method: str, url: str) -> HTTPProtocol.HTTPResponse:
         self.logger.info(f"Sending HTTP Request: ({method}, {url})")
 
-        req = HTTPProtocol.try_create_request(method, {"host": url})
-        req_str = req.to_string()
-        req_bytes = req_str.encode()
+        req_str = HTTPProtocol.try_create_request(method, {"host": url}).to_string()
         self.logger.debug(f"Created HTTP Request String: {req_str=}")
 
         self.logger.debug("Sending Payload...")
-        self.sock.send(req_bytes)
+        self.sock.send(req_str.encode())
 
         self.logger.debug("Awaiting Response...")
         
@@ -45,8 +43,8 @@ class ClientApp(Logger):
             res_bytes.append(bytes)
             if len(bytes) < 1024:
                 break
-            
         
+        res_bytes = self.sock.recv_all()
         res_str = res_bytes.decode()
 
         res = HTTPProtocol.try_parse_response(res_str)
