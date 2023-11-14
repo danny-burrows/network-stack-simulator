@@ -71,3 +71,68 @@ def test_parse_request():
     request = HttpLayer.create_request("GET", {"host": "localhost"})
     parsed_request = HttpLayer.parse_request(request.to_string().encode("utf-8"))
     assert parsed_request == request
+
+
+def test_get_exam_string_is_correct_for_head_request():
+    request = HttpLayer.create_request("HEAD", {})
+    actual = HttpLayer.get_exam_string("request", request.to_bytes())
+    expected = """\
+------------ HTTP Layer ------------
+RAW DATA: b'HEAD / HTTP/1.1\\n\\n'
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | HEAD / HTTP/1.1
+  | 
+  | 
+FIELDS:
+  |- method: HEAD
+  |- headers: <None>
+  |- body: <None>
+---------- END HTTP Layer ----------"""
+    assert actual == expected
+
+
+def test_get_exam_string_is_correct_for_get_request():
+    request = HttpLayer.create_request("GET", {"Host": "127.0.0.1"}, "Hello, World!")
+    actual = HttpLayer.get_exam_string("request", request.to_bytes())
+    expected = """\
+------------ HTTP Layer ------------
+RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!\\n'
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET / HTTP/1.1
+  | host: 127.0.0.1
+  | 
+  | Hello, World!
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- headers: {'host': '127.0.0.1'}
+  |- body: b'Hello, World!\\n'
+---------- END HTTP Layer ----------"""
+    assert actual == expected
+
+
+# TODO: Uncomment this test when we've fixed response parsing
+
+# def test_get_exam_string_is_correct_for_response():
+#     response = HttpLayer.create_response("200", {})
+#     actual = HttpLayer.get_exam_string("response", response.to_bytes())
+#     expected = """\
+# ------------ HTTP Layer ------------
+# RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!\\n'
+# MESSAGE TYPE: response
+# MESSAGE STRING:
+#   | GET / HTTP/1.1
+#   | host: 127.0.0.1
+#   |
+#   | Hello, World!
+#   |
+#   |
+# FIELDS:
+#   |- method: GET
+#   |- headers: {'host': '127.0.0.1'}
+#   |- body: b'Hello, World!\\n'
+# ---------- END HTTP Layer ----------"""
+#     assert actual == expected

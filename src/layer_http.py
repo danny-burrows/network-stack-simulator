@@ -152,8 +152,42 @@ class HttpLayer(Logger):
 
     physical: PhysicalLayer
 
-    def print_exam(data: bytes) -> None:
-        pass
+    @staticmethod
+    def get_exam_string(message_type, message_data: bytes) -> None:
+        message_obj = None
+        if message_type == "request":
+            message_obj = HttpLayer.parse_request(message_data)
+        elif message_type == "response":
+            message_obj = HttpLayer.parse_response(message_data)
+        else:
+            raise ValueError(f"get_exam_string called with invalid message_type '{message_type}'!")
+
+        message_string = "\n".join(f"  | {line}" for line in message_obj.to_string().split("\n"))
+
+        def parse_value(field_name, value):
+            if value and field_name == "body":
+                return value.encode("utf-8")
+            elif value:
+                return str(value)
+            else:
+                return "<None>"
+
+        message_obj_fields = "\n".join(
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message_obj).items()
+        )
+
+        return "\n".join(
+            (
+                "------------ HTTP Layer ------------",
+                f"RAW DATA: {message_data}",
+                f"MESSAGE TYPE: {message_type}",
+                "MESSAGE STRING:",
+                message_string,
+                "FIELDS:",
+                message_obj_fields,
+                "---------- END HTTP Layer ----------",
+            )
+        )
 
     def __init__(self, physical: PhysicalLayer) -> None:
         super().__init__()
@@ -162,6 +196,7 @@ class HttpLayer(Logger):
     def execute_client(self) -> None:
         req = self.create_request("HEAD", {})
         self.logger.info(f"{req.to_string()=}")
+        print(self.get_exam_string("request", req.to_bytes()))
         self.physical.send(req.to_bytes())
 
     def execute_server(self) -> None:
