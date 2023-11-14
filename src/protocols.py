@@ -1,10 +1,5 @@
+from __future__ import annotations
 from logger import Logger
-
-
-class DNSProtocol:
-    @staticmethod
-    def resolve_ip(url: str) -> str:
-        return "0.0.0.0"
 
 
 class HTTPProtocol:
