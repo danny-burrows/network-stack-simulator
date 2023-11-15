@@ -97,42 +97,37 @@ def test_get_exam_string_is_correct_for_get_request():
     actual = HttpLayer.get_exam_string("request", request.to_bytes())
     expected = """\
 ------------ HTTP Layer ------------
-RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!\\n'
+RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!'
 MESSAGE TYPE: request
 MESSAGE STRING:
   | GET / HTTP/1.1
   | host: 127.0.0.1
   | 
   | Hello, World!
-  | 
-  | 
 FIELDS:
   |- method: GET
   |- headers: {'host': '127.0.0.1'}
-  |- body: b'Hello, World!\\n'
+  |- body: b'Hello, World!'
 ---------- END HTTP Layer ----------"""
     assert actual == expected
 
 
-# TODO: Uncomment this test when we've fixed response parsing
-
-# def test_get_exam_string_is_correct_for_response():
-#     response = HttpLayer.create_response("200", {})
-#     actual = HttpLayer.get_exam_string("response", response.to_bytes())
-#     expected = """\
-# ------------ HTTP Layer ------------
-# RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!\\n'
-# MESSAGE TYPE: response
-# MESSAGE STRING:
-#   | GET / HTTP/1.1
-#   | host: 127.0.0.1
-#   |
-#   | Hello, World!
-#   |
-#   |
-# FIELDS:
-#   |- method: GET
-#   |- headers: {'host': '127.0.0.1'}
-#   |- body: b'Hello, World!\\n'
-# ---------- END HTTP Layer ----------"""
-#     assert actual == expected
+def test_get_exam_string_is_correct_for_response():
+    response = HttpLayer.create_response("302", {"date": "Mon, 01 Jan 1999 00:00:00 GMT"}, "Some body!")
+    actual = HttpLayer.get_exam_string("response", response.to_bytes())
+    expected = """\
+------------ HTTP Layer ------------
+RAW DATA: b'HTTP/1.1 302 Found\\ndate: Mon, 01 Jan 1999 00:00:00 GMT\\n\\nSome body!'
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 302 Found
+  | date: Mon, 01 Jan 1999 00:00:00 GMT
+  | 
+  | Some body!
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 302
+  |- headers: {'date': 'Mon, 01 Jan 1999 00:00:00 GMT'}
+  |- body: b'Some body!'
+---------- END HTTP Layer ----------"""
+    assert actual == expected
