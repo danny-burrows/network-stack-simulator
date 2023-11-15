@@ -58,4 +58,16 @@ def test_get_request_to_string():
 
 def test_response_to_string():
     response = HttpLayer.create_response("302", {"date": "Mon, 01 Jan 1999 00:00:00 GMT"}, "Some body!")
-    assert response.to_string() == "HTTP/1.1 302 Found\ndate: Mon, 01 Jan 1999 00:00:00 GMT\n\nSome body!\n"
+    assert response.to_string() == "HTTP/1.1 302 Found\ndate: Mon, 01 Jan 1999 00:00:00 GMT\n\nSome body!"
+
+
+def test_parse_response():
+    response = HttpLayer.create_response("302", {"date": "Mon, 01 Jan 1999 00:00:00 GMT"}, "Some body!")
+    parsed_response = HttpLayer.parse_response(response.to_string().encode("utf-8"))
+    assert parsed_response == response
+
+
+def test_parse_request():
+    request = HttpLayer.create_request("GET", {"host": "localhost"})
+    parsed_request = HttpLayer.parse_request(request.to_string().encode("utf-8"))
+    assert parsed_request == request

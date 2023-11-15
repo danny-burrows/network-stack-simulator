@@ -23,7 +23,7 @@ class HttpLayer(Logger):
             req_str += "\n"
 
             if self.body:
-                req_str += f"{self.body}\n"
+                req_str += f"{self.body}"
 
             return req_str
 
@@ -46,7 +46,7 @@ class HttpLayer(Logger):
             res_str += "\n"
 
             if self.body:
-                res_str += f"{self.body}\n"
+                res_str += f"{self.body}"
 
             return res_str
 
@@ -55,7 +55,7 @@ class HttpLayer(Logger):
 
     @staticmethod
     def parse_request(req_bytes: bytes) -> HTTPRequestStruct:
-        status, headers, body = HttpLayer.parse_message(req_bytes)
+        status, headers, body = HttpLayer._parse_message(req_bytes)
 
         if len(status) != 3:
             raise ValueError(f"HTTPRequest parse has invalid status line of length '{len(status)}': {req_bytes}!")
@@ -72,11 +72,15 @@ class HttpLayer(Logger):
         if version != HttpLayer.VERSION:
             raise ValueError(f"HTTPRequest parsed unsupported version '{version}': {req_bytes}!")
 
+        # Ensure body is None rather than '' if empty
+        if not body:
+            body = None
+
         return HttpLayer.HTTPRequestStruct(method, headers, body)
 
     @staticmethod
     def parse_response(res_bytes: bytes) -> HTTPResponseStruct:
-        status, headers, body = HttpLayer._try_parse_http_message(res_bytes)
+        status, headers, body = HttpLayer._parse_message(res_bytes)
 
         if len(status) != 3:
             raise ValueError(f"HTTPResponse parse has invalid status line of length '{len(status)}': {res_bytes}!")
@@ -99,7 +103,7 @@ class HttpLayer(Logger):
         return HttpLayer.HTTPResponseStruct(version, status_code, headers, body)
 
     @staticmethod
-    def parse_message(msg_bytes: bytes) -> list[list[str], dict[str, str], str]:
+    def _parse_message(msg_bytes: bytes) -> list[list[str], dict[str, str], str]:
         msg_str = msg_bytes.decode("utf-8")
 
         split_content = msg_str.split("\n\n")
