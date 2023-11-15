@@ -1,12 +1,14 @@
 import re
 import os
+import sys
 import logging
 
 
 LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
 LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
 LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
-LOG_OUTPUT_FILE = os.environ.get("SYS4_LOG_OUTPUT_FILE")
+LOG_FILE = os.environ.get("SYS4_LOG_FILE")
+EXAM_LOG_FILE = os.environ.get("SYS4_EXAM_LOG_FILE")
 
 
 logging.basicConfig(level=LOG_LEVEL)
@@ -80,9 +82,9 @@ class Logger:
 
         self.logger = logging.getLogger(class_name)
 
-        if LOG_OUTPUT_FILE:
+        if LOG_FILE:
             formatter = CustomFormatter(colour=False)
-            stream_handler = logging.FileHandler(LOG_OUTPUT_FILE)
+            stream_handler = logging.FileHandler(LOG_FILE)
         else:
             formatter = CustomFormatter()
             stream_handler = logging.StreamHandler()
@@ -92,3 +94,14 @@ class Logger:
         if not self.logger.handlers:
             self.logger.addHandler(stream_handler)
             self.logger.propagate = False
+
+        if EXAM_LOG_FILE:
+            stream_handler = logging.FileHandler(EXAM_LOG_FILE)
+        else:
+            stream_handler = logging.StreamHandler(sys.stdout)
+
+        self.exam_logger = logging.getLogger("Exam Logger")
+
+        if not self.exam_logger.handlers:
+            self.exam_logger.addHandler(stream_handler)
+            self.exam_logger.propagate = False

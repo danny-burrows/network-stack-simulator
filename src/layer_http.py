@@ -196,7 +196,7 @@ class HttpLayer(Logger):
     def execute_client(self) -> None:
         req = self.create_request("HEAD", {})
         self.logger.info(f"{req.to_string()=}")
-        print(self.get_exam_string("request", req.to_bytes()))
+        self.exam_logger.info(self.get_exam_string("request", req.to_bytes()))
         self.physical.send(req.to_bytes())
 
     def execute_server(self) -> None:
