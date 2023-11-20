@@ -10,7 +10,7 @@ LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
 LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
 LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
 
-ENABLE_EXAM_LOGGER = os.environ.get("SYS4_ENABLE_EXAM_LOGGER", False)
+ENABLE_EXAM_LOGGER = os.environ.get("SYS4_ENABLE_EXAM_LOGGER", True)
 EXAM_LOG_FILE = os.environ.get("SYS4_EXAM_LOG_FILE")
 
 
