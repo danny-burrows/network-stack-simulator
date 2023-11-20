@@ -97,7 +97,7 @@ def test_get_exam_string_is_correct_for_get_request():
     actual = HttpLayer.get_exam_string(request)
     expected = """\
 ------------ HTTP Layer ------------
-RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!'
+RAW DATA: b'GET / HTTP/1.1\\nhost: 127.0.0.1\\n\\nHello, World!'
 MESSAGE TYPE: request
 MESSAGE STRING:
   | GET / HTTP/1.1
