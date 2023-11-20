@@ -152,8 +152,35 @@ class HttpLayer(Logger):
 
     physical: PhysicalLayer
 
-    def print_exam(data: bytes) -> None:
-        pass
+    @staticmethod
+    def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct) -> None:
+        message_type = "request" if type(message) is HttpLayer.HTTPRequestStruct else "response"
+        message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
+
+        def parse_value(field_name, value):
+            if value and field_name == "body":
+                return value.encode("utf-8")
+            elif value:
+                return str(value)
+            else:
+                return "<None>"
+
+        message_fields = "\n".join(
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
+        )
+
+        return "\n".join(
+            (
+                "------------ HTTP Layer ------------",
+                f"RAW DATA: {message.to_bytes()}",
+                f"MESSAGE TYPE: {message_type}",
+                "MESSAGE STRING:",
+                message_string,
+                "FIELDS:",
+                message_fields,
+                "---------- END HTTP Layer ----------",
+            )
+        )
 
     def __init__(self, physical: PhysicalLayer) -> None:
         super().__init__()
@@ -162,6 +189,7 @@ class HttpLayer(Logger):
     def execute_client(self) -> None:
         req = self.create_request("HEAD", {})
         self.logger.info(f"{req.to_string()=}")
+        self.exam_logger.info(self.get_exam_string(req))
         self.physical.send(req.to_bytes())
 
     def execute_server(self) -> None:

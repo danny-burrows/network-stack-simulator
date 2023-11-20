@@ -1,12 +1,17 @@
 import re
 import os
+import sys
 import logging
 
 
+ENABLE_MAIN_LOGGER = os.environ.get("SYS4_ENABLE_MAIN_LOGGER", True)
+LOG_FILE = os.environ.get("SYS4_LOG_FILE")
 LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
 LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
 LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
-LOG_OUTPUT_FILE = os.environ.get("SYS4_LOG_OUTPUT_FILE")
+
+ENABLE_EXAM_LOGGER = os.environ.get("SYS4_ENABLE_EXAM_LOGGER", True)
+EXAM_LOG_FILE = os.environ.get("SYS4_EXAM_LOG_FILE")
 
 
 logging.basicConfig(level=LOG_LEVEL)
@@ -76,19 +81,37 @@ class Logger:
 
         if LOG_CLASS_FILTER and class_name != LOG_CLASS_FILTER:
             self.logger = DummyObject()
-            return
 
-        self.logger = logging.getLogger(class_name)
+        if not ENABLE_MAIN_LOGGER:
+            self.logger = DummyObject()
 
-        if LOG_OUTPUT_FILE:
-            formatter = CustomFormatter(colour=False)
-            stream_handler = logging.FileHandler(LOG_OUTPUT_FILE)
         else:
-            formatter = CustomFormatter()
-            stream_handler = logging.StreamHandler()
+            if LOG_FILE:
+                formatter = CustomFormatter(colour=False)
+                stream_handler = logging.FileHandler(LOG_FILE)
+            else:
+                formatter = CustomFormatter()
+                stream_handler = logging.StreamHandler()
 
-        stream_handler.setFormatter(formatter)
+            stream_handler.setFormatter(formatter)
 
-        if not self.logger.handlers:
-            self.logger.addHandler(stream_handler)
-            self.logger.propagate = False
+            self.logger = logging.getLogger(class_name)
+
+            if not self.logger.handlers:
+                self.logger.addHandler(stream_handler)
+                self.logger.propagate = False
+
+        if not ENABLE_EXAM_LOGGER:
+            self.exam_logger = DummyObject()
+
+        else:
+            if EXAM_LOG_FILE:
+                exam_stream_handler = logging.FileHandler(EXAM_LOG_FILE)
+            else:
+                exam_stream_handler = logging.StreamHandler(sys.stdout)
+
+            self.exam_logger = logging.getLogger("Exam Logger")
+
+            if not self.exam_logger.handlers:
+                self.exam_logger.addHandler(exam_stream_handler)
+                self.exam_logger.propagate = False
