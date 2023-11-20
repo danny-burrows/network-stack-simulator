@@ -153,16 +153,9 @@ class HttpLayer(Logger):
     physical: PhysicalLayer
 
     @staticmethod
-    def get_exam_string(message_type, message_data: bytes) -> None:
-        message_obj = None
-        if message_type == "request":
-            message_obj = HttpLayer.parse_request(message_data)
-        elif message_type == "response":
-            message_obj = HttpLayer.parse_response(message_data)
-        else:
-            raise ValueError(f"get_exam_string called with invalid message_type '{message_type}'!")
-
-        message_string = "\n".join(f"  | {line}" for line in message_obj.to_string().split("\n"))
+    def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct) -> None:
+        message_type = "Request" if type(message) is HttpLayer.HTTPRequestStruct else "Response"
+        message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
         def parse_value(field_name, value):
             if value and field_name == "body":
@@ -172,19 +165,19 @@ class HttpLayer(Logger):
             else:
                 return "<None>"
 
-        message_obj_fields = "\n".join(
-            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message_obj).items()
+        message_fields = "\n".join(
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
         )
 
         return "\n".join(
             (
                 "------------ HTTP Layer ------------",
-                f"RAW DATA: {message_data}",
+                f"RAW DATA: {message.to_bytes()}",
                 f"MESSAGE TYPE: {message_type}",
                 "MESSAGE STRING:",
                 message_string,
                 "FIELDS:",
-                message_obj_fields,
+                message_fields,
                 "---------- END HTTP Layer ----------",
             )
         )
@@ -196,7 +189,7 @@ class HttpLayer(Logger):
     def execute_client(self) -> None:
         req = self.create_request("HEAD", {})
         self.logger.info(f"{req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string("request", req.to_bytes()))
+        self.exam_logger.info(self.get_exam_string(req))
         self.physical.send(req.to_bytes())
 
     def execute_server(self) -> None:
