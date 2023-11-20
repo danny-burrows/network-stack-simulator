@@ -148,6 +148,7 @@ class HttpLayer(Logger):
     def create_response(status_code: str, headers: dict[str, str] = {}, body=None) -> HTTPResponseStruct:
         if status_code not in HttpLayer.VALID_STATUS_CODES:
             raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
+        
         return HttpLayer.HTTPResponseStruct(HttpLayer.VERSION, status_code, headers, body)
 
     physical: PhysicalLayer
@@ -188,11 +189,11 @@ class HttpLayer(Logger):
 
     def execute_client(self) -> None:
         req = self.create_request("HEAD", {})
-        self.logger.info(f"{req.to_string()=}")
+        self.logger.debug(f"{req.to_string()=}")
         self.exam_logger.info(self.get_exam_string(req))
         self.physical.send(req.to_bytes())
 
     def execute_server(self) -> None:
         req_bytes = self.physical.receive()
         req = self.parse_request(req_bytes)
-        self.logger.info(f"{req.to_string()=}")
+        self.logger.debug(f"{req.to_string()=}")
