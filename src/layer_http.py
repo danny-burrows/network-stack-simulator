@@ -154,7 +154,7 @@ class HttpLayer(Logger):
 
     @staticmethod
     def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct) -> None:
-        message_type = "Request" if type(message) is HttpLayer.HTTPRequestStruct else "Response"
+        message_type = "request" if type(message) is HttpLayer.HTTPRequestStruct else "response"
         message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
         def parse_value(field_name, value):

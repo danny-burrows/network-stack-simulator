@@ -75,7 +75,7 @@ def test_parse_request():
 
 def test_get_exam_string_is_correct_for_head_request():
     request = HttpLayer.create_request("HEAD", {})
-    actual = HttpLayer.get_exam_string("request", request.to_bytes())
+    actual = HttpLayer.get_exam_string(request)
     expected = """\
 ------------ HTTP Layer ------------
 RAW DATA: b'HEAD / HTTP/1.1\\n\\n'
@@ -93,8 +93,8 @@ FIELDS:
 
 
 def test_get_exam_string_is_correct_for_get_request():
-    request = HttpLayer.create_request("GET", {"Host": "127.0.0.1"}, "Hello, World!")
-    actual = HttpLayer.get_exam_string("request", request.to_bytes())
+    request = HttpLayer.create_request("GET", {"host": "127.0.0.1"}, "Hello, World!")
+    actual = HttpLayer.get_exam_string(request)
     expected = """\
 ------------ HTTP Layer ------------
 RAW DATA: b'GET / HTTP/1.1\\nHost: 127.0.0.1\\n\\nHello, World!'
@@ -114,7 +114,7 @@ FIELDS:
 
 def test_get_exam_string_is_correct_for_response():
     response = HttpLayer.create_response("302", {"date": "Mon, 01 Jan 1999 00:00:00 GMT"}, "Some body!")
-    actual = HttpLayer.get_exam_string("response", response.to_bytes())
+    actual = HttpLayer.get_exam_string(response)
     expected = """\
 ------------ HTTP Layer ------------
 RAW DATA: b'HTTP/1.1 302 Found\\ndate: Mon, 01 Jan 1999 00:00:00 GMT\\n\\nSome body!'
