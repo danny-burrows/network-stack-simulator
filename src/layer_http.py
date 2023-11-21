@@ -148,7 +148,7 @@ class HttpLayer(Logger):
     def create_response(status_code: str, headers: dict[str, str] = {}, body=None) -> HTTPResponseStruct:
         if status_code not in HttpLayer.VALID_STATUS_CODES:
             raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
-        
+
         return HttpLayer.HTTPResponseStruct(HttpLayer.VERSION, status_code, headers, body)
 
     physical: PhysicalLayer
