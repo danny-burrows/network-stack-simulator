@@ -173,9 +173,9 @@ class HttpLayer(Logger):
             )
         )
 
-    def __init__(self, physical: PhysicalLayer) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.physical = physical
+        self.physical = PhysicalLayer()
 
     def receive_request(self) -> HTTPRequestStruct:
         req_bytes = self.physical.receive()

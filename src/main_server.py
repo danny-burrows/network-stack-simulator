@@ -3,9 +3,7 @@ from layer_http import HttpLayer
 
 
 def main() -> None:
-    physical = PhysicalLayer()
-    http = HttpLayer(physical)
-
+    http = HttpLayer()
     http.execute_server()
 
 
