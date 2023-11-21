@@ -6,7 +6,7 @@ import logging
 
 ENABLE_MAIN_LOGGER = os.environ.get("SYS4_ENABLE_MAIN_LOGGER", True)
 LOG_FILE = os.environ.get("SYS4_LOG_FILE")
-LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "DEBUG").upper()
 LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
 LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
 
