@@ -1,10 +1,9 @@
-from layer_physical import PhysicalLayer
-from layer_http import HttpLayer
+from layer_application import ApplicationLayer
 
 
 def main() -> None:
-    http = HttpLayer()
-    http.execute_server()
+    app = ApplicationLayer()
+    app.execute_server()
 
 
 if __name__ == "__main__":

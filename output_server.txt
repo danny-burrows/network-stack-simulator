@@ -1,16 +1,16 @@
 ------------ HTTP Layer ------------
-RAW DATA: b'HEAD / HTTP/1.1\nhost: exam.com\n\n'
+RAW DATA: b'HEAD / HTTP/1.1\nhost: 192.168.0.5\n\n'
 MESSAGE TYPE: request
 MESSAGE STRING:
   | HEAD / HTTP/1.1
-  | host: exam.com
+  | host: 192.168.0.5
   | 
   | 
 FIELDS:
   |- method: HEAD
   |- uri: /
   |- version: HTTP/1.1
-  |- headers: {'host': 'exam.com'}
+  |- headers: {'host': '192.168.0.5'}
   |- body: <None>
 ---------- END HTTP Layer ----------
 ------------ HTTP Layer ------------
@@ -27,18 +27,18 @@ FIELDS:
   |- body: <None>
 ---------- END HTTP Layer ----------
 ------------ HTTP Layer ------------
-RAW DATA: b'GET / HTTP/1.1\nhost: exam.com\n\n'
+RAW DATA: b'GET / HTTP/1.1\nhost: 192.168.0.5\n\n'
 MESSAGE TYPE: request
 MESSAGE STRING:
   | GET / HTTP/1.1
-  | host: exam.com
+  | host: 192.168.0.5
   | 
   | 
 FIELDS:
   |- method: GET
   |- uri: /
   |- version: HTTP/1.1
-  |- headers: {'host': 'exam.com'}
+  |- headers: {'host': '192.168.0.5'}
   |- body: <None>
 ---------- END HTTP Layer ----------
 ------------ HTTP Layer ------------
