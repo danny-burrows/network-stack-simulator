@@ -141,12 +141,8 @@ class HttpProtocol:
 
         return HttpProtocol.HTTPResponseStruct(HttpProtocol.VERSION, status_code, headers, body)
 
-
-class ApplicationLayer(Logger):
-    transport: TransportLayer
-
     @staticmethod
-    def get_exam_string(message: HttpProtocol.HTTPRequestStruct | HttpProtocol.HTTPRequestStruct) -> None:
+    def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct) -> None:
         message_type = "request" if type(message) is HttpProtocol.HTTPRequestStruct else "response"
         message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
@@ -174,6 +170,10 @@ class ApplicationLayer(Logger):
                 "---------- END HTTP Layer ----------",
             )
         )
+
+
+class ApplicationLayer(Logger):
+    transport: TransportLayer
 
     def __init__(self) -> None:
         super().__init__()
