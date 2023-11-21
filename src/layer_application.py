@@ -1,5 +1,5 @@
 from logger import Logger
-from layer_transport import TransportLayer, TcpSocket
+from layer_transport import TransportLayer
 from dataclasses import dataclass
 import random
 
@@ -135,7 +135,7 @@ class HttpProtocol:
         return HttpProtocol.HTTPRequestStruct(method, uri, HttpProtocol.VERSION, headers, body)
 
     @staticmethod
-    def create_response(status_code: str, *, headers: dict[str, str] = {}, body = "") -> HTTPResponseStruct:
+    def create_response(status_code: str, *, headers: dict[str, str] = {}, body="") -> HTTPResponseStruct:
         if status_code not in HttpProtocol.STATUS_PHRASES:
             raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
 
@@ -188,7 +188,7 @@ class ApplicationLayer(Logger):
         sock.connect(f"{hostname}:{port}")
 
         # Send HEAD request and receive response
-        req = HttpProtocol.create_request("HEAD", "/", headers={ "host": hostname })
+        req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
         self.exam_logger.info(self.get_exam_string(req))
         self.logger.debug("⬇️  [HTTP->TCP]")
@@ -201,7 +201,7 @@ class ApplicationLayer(Logger):
         self.exam_logger.info(self.get_exam_string(res))
 
         # Send GET request and receive response
-        req = HttpProtocol.create_request("GET", "/", headers={ "host": hostname })
+        req = HttpProtocol.create_request("GET", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
         self.exam_logger.info(self.get_exam_string(req))
         self.logger.debug("⬇️  [HTTP->TCP]")

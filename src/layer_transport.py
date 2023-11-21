@@ -5,7 +5,7 @@ from layer_physical import PhysicalLayer
 
 class TcpSocket(Logger):
     transport: TransportLayer
-    
+
     def __init__(self, transport: TransportLayer) -> None:
         super().__init__()
         self.transport = transport
@@ -28,7 +28,7 @@ class TcpSocket(Logger):
 
 class TransportLayer(Logger):
     physical: PhysicalLayer
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.physical = PhysicalLayer()
