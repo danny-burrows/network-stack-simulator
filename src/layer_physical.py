@@ -3,34 +3,36 @@ import os
 
 
 class PhysicalLayer(Logger):
-    PIPE_PATH = "/var/tmp/physical-pipe"
+    PIPE_PATH = "/var/tmp/physical-pipe-"
+
+    communication_index: int
 
     def __init__(self) -> None:
         super().__init__()
+        self.communication_index = 0
 
-        try:
-            os.rmdir(PhysicalLayer.PIPE_PATH)
-
-        except (FileNotFoundError, NotADirectoryError):
-            pass
+    @property
+    def pipe_path(self) -> str:
+        return PhysicalLayer.PIPE_PATH + str(self.communication_index)
 
     def send(self, data: bytes) -> None:
         self.logger.debug(f"⌛ Sending {data=}...")
 
         file_owner = False
         try:
-            os.mkfifo(PhysicalLayer.PIPE_PATH)
+            os.mkfifo(self.pipe_path)
             file_owner = True
 
         except FileExistsError:
             pass
 
-        with open(PhysicalLayer.PIPE_PATH, "wb") as f:
+        with open(self.pipe_path, "wb") as f:
             f.write(data)
 
         if file_owner:
-            os.rmdir(PhysicalLayer.PIPE_PATH)
+            os.remove(self.pipe_path)
 
+        self.communication_index += 1
         self.logger.debug("✅ Sent.")
 
     def receive(self) -> bytes:
@@ -38,17 +40,18 @@ class PhysicalLayer(Logger):
 
         file_owner = False
         try:
-            os.mkfifo(PhysicalLayer.PIPE_PATH)
+            os.mkfifo(self.pipe_path)
             file_owner = True
 
         except FileExistsError:
             pass
 
-        with open(PhysicalLayer.PIPE_PATH, "rb") as f:
+        with open(self.pipe_path, "rb") as f:
             data = f.read()
 
         if file_owner:
-            os.rmdir(PhysicalLayer.PIPE_PATH)
+            os.remove(self.pipe_path)
 
         self.logger.debug(f"✅ Received {data=}.")
+        self.communication_index += 1
         return data

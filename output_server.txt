@@ -1,0 +1,56 @@
+------------ HTTP Layer ------------
+RAW DATA: b'HEAD / HTTP/1.1\nhost: exam.com\n\n'
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | HEAD / HTTP/1.1
+  | host: exam.com
+  | 
+  | 
+FIELDS:
+  |- method: HEAD
+  |- uri: /
+  |- version: HTTP/1.1
+  |- headers: {'host': 'exam.com'}
+  |- body: <None>
+---------- END HTTP Layer ----------
+------------ HTTP Layer ------------
+RAW DATA: b'HTTP/1.1 302 Found\n\n'
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 302 Found
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 302
+  |- headers: <None>
+  |- body: <None>
+---------- END HTTP Layer ----------
+------------ HTTP Layer ------------
+RAW DATA: b'GET / HTTP/1.1\nhost: exam.com\n\n'
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET / HTTP/1.1
+  | host: exam.com
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- uri: /
+  |- version: HTTP/1.1
+  |- headers: {'host': 'exam.com'}
+  |- body: <None>
+---------- END HTTP Layer ----------
+------------ HTTP Layer ------------
+RAW DATA: b'HTTP/1.1 302 Found\n\n'
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 302 Found
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 302
+  |- headers: <None>
+  |- body: <None>
+---------- END HTTP Layer ----------

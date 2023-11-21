@@ -1,29 +1,33 @@
 from logger import Logger
 from layer_physical import PhysicalLayer
 from dataclasses import dataclass
+import random
 
 
 class HttpLayer(Logger):
+    # https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5
+
     VERSION = "HTTP/1.1"
-    VALID_STATUS_CODES = ["302"]
     VALID_METHODS = ["HEAD", "GET"]
-    STATUS_CODE_MAP = {"302": "Found"}
+    STATUS_PHRASES = {"302": "Found"}
+
+    SP = " "
+    CRLF = "\n"
 
     @dataclass
     class HTTPRequestStruct:
         method: str
+        uri: str
+        version: str
         headers: dict
         body: str
 
         def to_string(self) -> str:
-            req_str = f"{self.method} / {HttpLayer.VERSION}\n"
-
+            req_str = f"{self.method}{HttpLayer.SP}{self.uri}{HttpLayer.SP}{self.version}{HttpLayer.CRLF}"
             for header in self.headers:
-                req_str += f"{header}: {self.headers[header]}\n"
-            req_str += "\n"
-
-            if self.body:
-                req_str += f"{self.body}"
+                req_str += f"{header}:{HttpLayer.SP}{self.headers[header]}{HttpLayer.CRLF}"
+            req_str += HttpLayer.CRLF
+            req_str += self.body
 
             return req_str
 
@@ -38,15 +42,12 @@ class HttpLayer(Logger):
         body: str
 
         def to_string(self) -> str:
-            status_msg = HttpLayer.STATUS_CODE_MAP[self.status_code]
-            res_str = f"{HttpLayer.VERSION} {self.status_code} {status_msg}\n"
-
+            phrase = HttpLayer.STATUS_PHRASES[self.status_code]
+            res_str = f"{self.version}{HttpLayer.SP}{self.status_code}{HttpLayer.SP}{phrase}{HttpLayer.CRLF}"
             for header in self.headers:
-                res_str += f"{header}: {self.headers[header]}\n"
-            res_str += "\n"
-
-            if self.body:
-                res_str += f"{self.body}"
+                res_str += f"{header}:{HttpLayer.SP}{self.headers[header]}{HttpLayer.CRLF}"
+            res_str += HttpLayer.CRLF
+            res_str += self.body
 
             return res_str
 
@@ -55,49 +56,39 @@ class HttpLayer(Logger):
 
     @staticmethod
     def parse_request(req_bytes: bytes) -> HTTPRequestStruct:
-        status, headers, body = HttpLayer._parse_message(req_bytes)
+        start, headers, body = HttpLayer._parse_message(req_bytes)
 
-        if len(status) != 3:
-            raise ValueError(f"HTTPRequest parse has invalid status line of length '{len(status)}': {req_bytes}!")
+        if len(start) != 3:
+            raise ValueError(f"HTTP Request Parse Error: Invalid start line of length '{len(start)}': {req_bytes}!")
 
-        method = status[0]
-        version = status[2]
+        (method, uri, version) = start
 
         if method not in HttpLayer.VALID_METHODS:
-            raise ValueError(f"HTTPRequest parsed unsupported method '{method}': {req_bytes}!")
-
-        if status[1] != "/":
-            raise ValueError(f"HTTPRequest parsed invalid status line '{status}': {req_bytes}!")
+            raise ValueError(f"HTTP Request Parse Error: Unsupported method '{method}': {req_bytes}!")
 
         if version != HttpLayer.VERSION:
-            raise ValueError(f"HTTPRequest parsed unsupported version '{version}': {req_bytes}!")
+            raise ValueError(f"HTTP Request Parse Error: Unsupported version '{version}': {req_bytes}!")
 
-        # Ensure body is None rather than '' if empty
-        if not body:
-            body = None
-
-        return HttpLayer.HTTPRequestStruct(method, headers, body)
+        return HttpLayer.HTTPRequestStruct(method, uri, version, headers, body)
 
     @staticmethod
     def parse_response(res_bytes: bytes) -> HTTPResponseStruct:
-        status, headers, body = HttpLayer._parse_message(res_bytes)
+        start, headers, body = HttpLayer._parse_message(res_bytes)
 
-        if len(status) != 3:
-            raise ValueError(f"HTTPResponse parse has invalid status line of length '{len(status)}': {res_bytes}!")
+        if len(start) != 3:
+            raise ValueError(f"HTTP Response Parse Error: Invalid start line of length '{len(start)}': {res_bytes}!")
 
-        version = status[0]
-        status_code = status[1]
-        status_msg = status[2]
+        version, status_code, status_msg = start
 
         if version != HttpLayer.VERSION:
-            raise ValueError(f"HTTPResponse parsed unsupported version '{version}': {res_bytes}!")
+            raise ValueError(f"HTTP Response Parse Error: Unsupported version '{version}': {res_bytes}!")
 
-        if status_code not in HttpLayer.VALID_STATUS_CODES:
-            raise ValueError(f"HTTPResponse parsed unsupported response code '{status_code}': {res_bytes}!")
+        if status_code not in HttpLayer.STATUS_PHRASES:
+            raise ValueError(f"HTTP Response Parse Error: Unsupported status code '{status_code}': {res_bytes}!")
 
-        if status_msg != HttpLayer.STATUS_CODE_MAP[status_code]:
+        if status_msg != HttpLayer.STATUS_PHRASES[status_code]:
             raise ValueError(
-                f"HTTPResponse parsed incorrect response message '{status_msg}!={HttpLayer.STATUS_CODE_MAP[status_code]}': {res_bytes}!"
+                f"HTTP Response Parse Error: Incorrect phrase '{status_msg}!={HttpLayer.STATUS_PHRASES[status_code]}': {res_bytes}!"
             )
 
         return HttpLayer.HTTPResponseStruct(version, status_code, headers, body)
@@ -106,35 +97,34 @@ class HttpLayer(Logger):
     def _parse_message(msg_bytes: bytes) -> list[list[str], dict[str, str], str]:
         msg_str = msg_bytes.decode("utf-8")
 
-        split_content = msg_str.split("\n\n")
+        try:
+            header, body = msg_str.split(f"{HttpLayer.CRLF}{HttpLayer.CRLF}")
+        except ValueError as e:
+            raise ValueError(f"HTTP Message Parse Error: Could not split headers / body! ({msg_str})\n{e}")
 
-        if len(split_content) != 2:
-            raise ValueError(f"HTTP message content split incorrect count '{len(split_content)}': {msg_str}!")
+        # header_lines contains both start-line and header-lines
+        header_lines = header.split(HttpLayer.CRLF)
+        if len(header_lines) < 0:
+            raise ValueError(f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})")
 
-        meta_content, body_content = split_content
-
-        meta_lines = meta_content.split("\n")
-
-        if len(meta_lines) < 1:
-            raise ValueError(f"HTTP message meta contains 0 lines: {msg_str}!")
-
-        status = meta_lines[0].split(" ")
+        # Spec specifies start-line as request-line or status-line
+        start = header_lines.pop(0).split(HttpLayer.SP)
 
         headers = {}
-        for i in range(1, len(meta_lines)):
-            line = meta_lines[i]
-            line = line.split(": ")
-            if len(line) != 2:
-                raise ValueError(f"HTTP message header line split incorrect count '{line}': {msg_str}!")
-            headers[line[0].lower()] = line[1]
+        for header_line in header_lines:
+            try:
+                key, value = header_line.split(f":{HttpLayer.SP}")
+            except ValueError as e:
+                raise ValueError(f"HTTP Message Parse Error: Headers expect 'key: value'! ({msg_str})\n{e}")
+            headers[key.lower()] = value
 
-        return status, headers, body_content
+        return start, headers, body
 
     @staticmethod
-    def create_request(method: str, headers: dict[str, str], body: str = None) -> HTTPRequestStruct:
+    def create_request(method: str, uri: str, *, headers: dict[str, str], body: str = "") -> HTTPRequestStruct:
         method = method.upper()
-        for header in headers:
-            headers[header] = headers[header].lower()
+        for key in headers:
+            headers[key] = headers[key].lower()
 
         if method not in HttpLayer.VALID_METHODS:
             raise NotImplementedError(f"HTTPRequest initialized with unsupported method '{method}'!")
@@ -142,11 +132,11 @@ class HttpLayer(Logger):
         if method == "HEAD" and body:
             raise NotImplementedError(f"HTTPRequest method HEAD should not receive {body=}")
 
-        return HttpLayer.HTTPRequestStruct(method, headers, body)
+        return HttpLayer.HTTPRequestStruct(method, uri, HttpLayer.VERSION, headers, body)
 
     @staticmethod
-    def create_response(status_code: str, headers: dict[str, str] = {}, body=None) -> HTTPResponseStruct:
-        if status_code not in HttpLayer.VALID_STATUS_CODES:
+    def create_response(status_code: str, *, headers: dict[str, str] = {}, body = "") -> HTTPResponseStruct:
+        if status_code not in HttpLayer.STATUS_PHRASES:
             raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
 
         return HttpLayer.HTTPResponseStruct(HttpLayer.VERSION, status_code, headers, body)
@@ -187,13 +177,46 @@ class HttpLayer(Logger):
         super().__init__()
         self.physical = physical
 
-    def execute_client(self) -> None:
-        req = self.create_request("HEAD", {})
-        self.logger.debug(f"{req.to_string()=}")
+    def receive_request(self) -> HTTPRequestStruct:
+        req_bytes = self.physical.receive()
+        self.logger.debug("⬆️  [PHYSICAL->HTTP]")
+        req = self.parse_request(req_bytes)
+        self.logger.info(f"Received {req.to_string()=}")
         self.exam_logger.info(self.get_exam_string(req))
-        self.physical.send(req.to_bytes())
+
+    def receive_response(self) -> HTTPResponseStruct:
+        res_bytes = self.physical.receive()
+        self.logger.debug("⬆️  [PHYSICAL->HTTP]")
+        res = self.parse_response(res_bytes)
+        self.logger.info(f"Received {res.to_string()=}")
+        self.exam_logger.info(self.get_exam_string(res))
+
+    def send_message(self, msg: HTTPResponseStruct | HTTPRequestStruct) -> None:
+        self.logger.info(f"Sending {msg.to_string()=}")
+        self.exam_logger.info(self.get_exam_string(msg))
+        self.logger.debug("⬇️  [HTTP->PHYSICAL]")
+        self.physical.send(msg.to_bytes())
+
+    def execute_client(self) -> None:
+        # Send HEAD request and receive response
+        req = self.create_request("HEAD", "/", headers={"host": "exam.com"})
+        self.send_message(req)
+        res = self.receive_response()
+
+        # Send GET request and receive response
+        req = self.create_request("GET", "/", headers={"host": "exam.com"})
+        self.send_message(req)
+        res = self.receive_response()
 
     def execute_server(self) -> None:
-        req_bytes = self.physical.receive()
-        req = self.parse_request(req_bytes)
-        self.logger.debug(f"{req.to_string()=}")
+        # Receive HEAD request and send random 300 response
+        req = self.receive_request()
+        status = random.choice(list(HttpLayer.STATUS_PHRASES.keys()))
+        res = self.create_response(status)
+        self.send_message(res)
+
+        # Receive GET request and send random 300 response
+        req = self.receive_request()
+        status = random.choice(list(HttpLayer.STATUS_PHRASES.keys()))
+        res = self.create_response(status)
+        self.send_message(res)

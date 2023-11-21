@@ -88,7 +88,7 @@ class Logger:
         else:
             if LOG_FILE:
                 formatter = CustomFormatter(colour=False)
-                stream_handler = logging.FileHandler(LOG_FILE)
+                stream_handler = logging.FileHandler(LOG_FILE, mode="w")
             else:
                 formatter = CustomFormatter()
                 stream_handler = logging.StreamHandler()
@@ -106,7 +106,7 @@ class Logger:
 
         else:
             if EXAM_LOG_FILE:
-                exam_stream_handler = logging.FileHandler(EXAM_LOG_FILE)
+                exam_stream_handler = logging.FileHandler(EXAM_LOG_FILE, mode="w")
             else:
                 exam_stream_handler = logging.StreamHandler(sys.stdout)
 
