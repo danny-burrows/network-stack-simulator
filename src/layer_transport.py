@@ -76,6 +76,7 @@ class TcpProtocol:
             return l
         
         def to_string(self) -> str:
+            # TODO: Decide on final format
             return "Flags: " + "".join(str(i) for i in self._to_list())
 
         def to_bytes(self) -> bytes:
@@ -86,18 +87,31 @@ class TcpProtocol:
 
     @dataclass
     class TcpOption:
+        # TODO: Could probably do with checking certain "kinds" arent given any data...
+        
         kind: int
-        length: int | None
-        data: bytes | None
+        length: int = 1
+        data: bytes = bytes()
 
         def __len__(self):
-            len(self.to_bytes())
+            return self.length
 
         def to_string(self) -> str:
-            pass
+            # TODO: Decide on final format
+            return f"Options: kind={self.kind} length={self.length} data={self.data}"
 
         def to_bytes(self) -> bytes:
-            pass
+            # If option is "End of Option List" or "No-Operation" then no length needed
+            if self.kind in (0, 1):
+                option_bytes = bytes([self.kind])
+            else:
+                option_bytes = bytes([self.kind, self.length]) + self.data
+
+            print(option_bytes)
+
+            # Ensure result is the correct length
+            assert len(option_bytes) == self.length
+            return option_bytes
     
     @dataclass
     class TcpPacket:
