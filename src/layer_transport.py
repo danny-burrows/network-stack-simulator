@@ -63,8 +63,6 @@ class TcpProtocol:
 
     @dataclass
     class TcpFlags:
-        # NOTE: Flags are left-padded to also accomodate the "reserved" portion
-        
         urg: bool = False
         ack: bool = False
         psh: bool = False
@@ -72,11 +70,18 @@ class TcpProtocol:
         syn: bool = False
         fin: bool = False
 
+        def _to_list(self) -> [bool]:
+            l = [int(self.urg), int(self.ack), int(self.psh), int(self.rst), int(self.syn), int(self.fin)]
+            assert len(l) == len(vars(self))
+            return l
+        
         def to_string(self) -> str:
-            return "Flags: " + "".join("1" if i else "0" for i in vars(self))
+            return "Flags: " + "".join(str(i) for i in self._to_list())
 
         def to_bytes(self) -> bytes:
-            flags_int = int(urg)*32 + int(ack)*16 + int(psh)*8 + int(rst)*4 + int(syn)*2 + int(fin)
+            flags_int = 0
+            for i, b in enumerate(self._to_list()):
+                flags_int += b * (2 ** i)
             return bytes([flags_int])
 
     @dataclass
