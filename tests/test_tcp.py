@@ -5,7 +5,7 @@ def test_tcp_flags_to_string():
     tcp_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
     tcp_flags_string = tcp_flags.to_string()
 
-    assert tcp_flags_string == "Flags: 010010"
+    assert tcp_flags_string == "010010"
 
 
 def test_tcp_flags_to_bytes():
@@ -19,7 +19,7 @@ def test_tcp_option_to_string():
     tcp_option = TcpProtocol.TcpOption(kind=0)
     tcp_option_string = tcp_option.to_string()
 
-    assert tcp_option_string == "Options: kind=0 length=1 data=b''"
+    assert tcp_option_string == "01"
 
 
 def test_tcp_option_to_bytes():

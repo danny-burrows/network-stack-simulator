@@ -74,8 +74,7 @@ class TcpProtocol:
             return flag_list
 
         def to_string(self) -> str:
-            # TODO: Decide on final format
-            return "Flags: " + "".join(str(i) for i in self._to_list())
+            return "".join(str(i) for i in self._to_list())
 
         def to_bytes(self) -> bytes:
             flags_int = 0
@@ -95,8 +94,7 @@ class TcpProtocol:
             return self.length
 
         def to_string(self) -> str:
-            # TODO: Decide on final format
-            return f"Options: kind={self.kind} length={self.length} data={self.data}"
+            return f"{self.kind}{self.length}{self.data if self.data else ''}"
 
         def to_bytes(self) -> bytes:
             # If option is "End of Option List" or "No-Operation" then no length needed
