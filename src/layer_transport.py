@@ -302,6 +302,8 @@ class TransportLayer(Logger):
     between a source host/port (ourselves) and some destination host/port.
     """
 
+    # TODO: Tcp State
+
     physical: PhysicalLayer
 
     src_port: int
