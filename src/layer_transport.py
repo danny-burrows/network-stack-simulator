@@ -69,6 +69,19 @@ class TcpProtocol:
         syn: bool = False
         fin: bool = False
 
+        @classmethod
+        def from_bytes(cls, flag_bytes: bytes):
+            assert len(flag_bytes) == 1, "Size of flags should be 1 byte (6 bits with 2 left-padding)"
+            flags_int = struct.unpack("=B", flag_bytes)[0]
+            return cls(
+                urg=bool(flags_int & (2**0)),
+                ack=bool(flags_int & (2**1)),
+                psh=bool(flags_int & (2**2)),
+                rst=bool(flags_int & (2**3)),
+                syn=bool(flags_int & (2**4)),
+                fin=bool(flags_int & (2**5)),
+            )
+
         def __int__(self) -> int:
             flags_int = 0
             for i, b in enumerate(self._to_int_list()[::-1]):

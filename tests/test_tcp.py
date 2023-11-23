@@ -17,6 +17,13 @@ def test_tcp_flags_to_bytes():
     assert tcp_flags_bytes == bytes([int("010010", base=2)])
 
 
+def test_tcp_parse_flags():
+    tcp_flags_bytes = bytes([0b00010010])
+    tcp_flags = TcpProtocol.TcpFlags.from_bytes(tcp_flags_bytes)
+
+    assert tcp_flags == TcpProtocol.TcpFlags(syn=True, ack=True)
+
+
 def test_tcp_option_to_string():
     tcp_option = TcpProtocol.TcpOption(kind=0)
     tcp_option_string = tcp_option.to_string()
