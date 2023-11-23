@@ -33,7 +33,7 @@ class TcpSocket(Logger):
         # Dynamic ports are in the range 49152 to 65535.
         port = random.randint(49152, 65535)
 
-        self._bind((host, port))
+        self._bind(host, port)
 
         # Calculate destination host and port.
         dest_host, dest_port = self._parse_addr(addr)
@@ -45,7 +45,7 @@ class TcpSocket(Logger):
         self.host, self.port = host, port
 
     def bind(self, addr: str) -> None:
-        self._bind(self._parse_addr(addr))
+        self._bind(*self._parse_addr(addr))
 
     def accept(self) -> None:
         # Open file and wait for some SYN packet...
@@ -264,11 +264,9 @@ class TcpProtocol:
         flags = TcpProtocol.TcpFlags.from_int(padded_flags)
 
         options_data = packet_data[20:data_offset_bytes]
-        print(options_data)
         options = []
         while options_data:
             option, options_data = TcpProtocol.TcpOption.from_bytes_with_remainder(options_data)
-            print(options_data)
             options.append(option)
 
             # If option is of type options terminate then break
@@ -305,6 +303,9 @@ class TransportLayer(Logger):
 
     physical: PhysicalLayer
 
+    src_port: int
+    dest_port: int
+
     def __init__(self) -> None:
         super().__init__()
         self.physical = PhysicalLayer()
@@ -317,11 +318,10 @@ class TransportLayer(Logger):
 
         # Create and send a SYN packet.
         syn_packet = TcpProtocol.create_packet(src_port, dest_port, TcpProtocol.TcpFlags(syn=True))
-        self.send(syn_packet.to_bytes())
+        self._send_packet(syn_packet)
 
         # Wait to recive a SYNACK.
-        recv_packet_bytes = self.receive()
-        recv_packet = TcpProtocol.parse_packet(recv_packet_bytes)
+        recv_packet = self._receive_packet()
 
         # Check recv packet has is SYNACK flags set.
         # TODO: More error handling? Probably better error handling...
@@ -330,13 +330,15 @@ class TransportLayer(Logger):
 
         # 3. Send an ACK.
         ack_packet = TcpProtocol.create_packet(src_port, dest_port, TcpProtocol.TcpFlags(ack=True))
-        self.send(ack_packet.to_bytes())
+        self._send_packet(ack_packet)
+
+        self.src_port = src_port
+        self.dest_port = dest_port
 
     def accept_incoming_handshake(self, src_port) -> int:
         while True:
-            # Wait to recieve a packet.
-            recv_packet_bytes = self.receive()
-            recv_packet = TcpProtocol.parse_packet(recv_packet_bytes)
+            # Wait to receive a packet.
+            recv_packet = self._receive_packet()
 
             # Check recv packet has is SYN flag set.
             if recv_packet.flags.syn:
@@ -344,15 +346,17 @@ class TransportLayer(Logger):
 
             self.logger.warn(f"Server waiting to accept connections recived NON-SYN packet: {recv_packet.to_string()}")
 
+        self.src_port = src_port
+        self.dest_port = recv_packet.src_port
+
         # Create and send a SYNACK packet.
         syn_ack_packet = TcpProtocol.create_packet(
             src_port, recv_packet.src_port, TcpProtocol.TcpFlags(syn=True, ack=True)
         )
-        self.send(syn_ack_packet.to_bytes())
+        self._send_packet(syn_ack_packet)
 
-        # Wait to recieve a ACK packet.
-        recv_packet_bytes = self.receive()
-        recv_packet = TcpProtocol.parse_packet(recv_packet_bytes)
+        # Wait to receive a ACK packet.
+        recv_packet = self._receive_packet()
 
         # Check recv packet has is ACK flags set.
         # TODO: More error handling? Probably better error handling...
@@ -363,13 +367,24 @@ class TransportLayer(Logger):
         # Send FIN packet to target_addr to close the connection.
         pass
 
-    def receive(self) -> bytes:
-        data = self.physical.receive()
+    def _receive_packet(self) -> TcpProtocol.TcpPacket:
+        packet = TcpProtocol.parse_packet(self.physical.receive())
         self.logger.debug("⬆️  [Physical->TCP]")
-        self.logger.info(f"Received {data=}")
-        return data
+        self.logger.info(f"Received {packet=}")
+        return packet
+
+    def _send_packet(self, packet: TcpProtocol.TcpPacket) -> None:
+        self.logger.info(f"Sending {packet=}...")
+        self.logger.debug("⬇️  [TCP->Physical]")
+        self.physical.send(packet.to_bytes())
+
+    def receive(self) -> bytes:
+        packet = self._receive_packet()
+        return packet.data
 
     def send(self, data: bytes) -> None:
-        self.logger.info(f"Sending {data=}...")
-        self.logger.debug("⬇️  [TCP->Physical]")
-        self.physical.send(data)
+        # TODO: Ensure connection has been established and fill out flags and options
+        packet = TcpProtocol.create_packet(
+            self.src_port, self.dest_port, TcpProtocol.TcpFlags(ack=True), data=data, options=[]
+        )
+        self._send_packet(packet)

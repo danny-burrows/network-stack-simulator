@@ -190,7 +190,7 @@ class ApplicationLayer(Logger):
         # Send HEAD request and receive response
         req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
@@ -198,12 +198,12 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res))
 
         # Send GET request and receive response
         req = HttpProtocol.create_request("GET", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
@@ -211,7 +211,7 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res))
 
     def execute_server(self) -> None:
         # Initialize mock TCP socket that holds a config and talks to self.transport
@@ -227,12 +227,12 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
 
@@ -241,11 +241,11 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
