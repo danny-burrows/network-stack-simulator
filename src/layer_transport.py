@@ -107,6 +107,20 @@ class TcpProtocol:
         length: int = 1
         data: bytes = bytes()
 
+        @classmethod
+        def from_bytes(cls, option_bytes: bytes):
+            option_kind = option_bytes[0]
+
+            if option_kind in (0, 1):
+                return cls(kind=option_kind)
+
+            assert len(option_bytes) > 1, "Option is of kind > 1 but has no length or data!"
+
+            option_length = option_bytes[1]
+            option_data = struct.unpack(f"={option_length - 2}s", option_bytes[2:])[0]
+
+            return cls(kind=option_kind, length=option_length, data=option_data)
+
         def __len__(self):
             return self.length
 

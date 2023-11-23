@@ -45,6 +45,20 @@ def test_tcp_option_to_bytes_with_data():
     assert tcp_option_bytes == bytes([2, 3, 1])
 
 
+def test_tcp_parse_option_with_no_data():
+    tcp_option_bytes = bytes([0])
+    tcp_option = TcpProtocol.TcpOption.from_bytes(tcp_option_bytes)
+
+    assert tcp_option == TcpProtocol.TcpOption(kind=0)
+
+
+def test_tcp_parse_option_with_data():
+    tcp_option_bytes = bytes([2, 4, 0, 255])
+    tcp_option = TcpProtocol.TcpOption.from_bytes(tcp_option_bytes)
+
+    assert tcp_option == TcpProtocol.TcpOption(kind=2, length=4, data=bytes([0, 255]))
+
+
 def test_tcp_packet_to_bytes():
     # Create a basic SYN packet
     tcp_flags = TcpProtocol.TcpFlags(syn=True)
