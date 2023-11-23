@@ -100,7 +100,7 @@ def test_tcp_packet_to_bytes():
 
 def test_tcp_packet_to_bytes_with_options():
     # Create a basic SYNACK packet with some options
-    tcp_flags = TcpProtocol.TcpFlags(syn=True)
+    tcp_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
 
     tcp_options = [
         # Maximum segment size option
@@ -136,8 +136,8 @@ def test_tcp_packet_to_bytes_with_options():
         80,  # Destination Port
         0,  # Sequence Number
         0,  # Ack Number
-        6 << 4,  # Data Offset (Right padded by 4)
-        0b00000010,  # Flags (Left padded by 2)
+        7 << 4,  # Data Offset (Right padded by 4)
+        0b00010010,  # Flags (Left padded by 2)
         0,  # Window
         1,  # Checksum
         0,  # Urgent Pointer
@@ -158,3 +158,66 @@ def test_tcp_packet_to_bytes_with_options():
         # Padding at the end to fill 2-byte words
         0,
     )
+
+
+def test_tcp_parse_packet():
+    # Create a basic SYN packet
+    tcp_flags = TcpProtocol.TcpFlags(syn=True)
+
+    source_port = 59999
+    destination_port = 80
+    tcp_packet = TcpProtocol.create_packet(
+        source_port,
+        destination_port,
+        flags=tcp_flags,
+    )
+    tcp_packet_bytes = tcp_packet.to_bytes()
+
+    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet
+
+
+def test_tcp_parse_packet_with_options():
+    # Create a basic SYNACK packet with some options
+    tcp_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
+
+    tcp_options = [
+        # Maximum segment size option
+        TcpProtocol.TcpOption(kind=2, length=4, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=0),
+    ]
+
+    source_port = 59999
+    destination_port = 80
+    tcp_packet = TcpProtocol.create_packet(
+        source_port,
+        destination_port,
+        flags=tcp_flags,
+        options=tcp_options,
+    )
+    tcp_packet_bytes = tcp_packet.to_bytes()
+
+    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet
+
+
+def test_tcp_parse_packet_with_options_and_data():
+    # Create a basic SYNACK packet with some options
+    tcp_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
+
+    tcp_options = [
+        # Maximum segment size option
+        TcpProtocol.TcpOption(kind=2, length=4, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=0),
+    ]
+
+    source_port = 59999
+    destination_port = 80
+    tcp_packet = TcpProtocol.create_packet(
+        source_port, destination_port, flags=tcp_flags, options=tcp_options, data=bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    )
+    tcp_packet_bytes = tcp_packet.to_bytes()
+
+    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet

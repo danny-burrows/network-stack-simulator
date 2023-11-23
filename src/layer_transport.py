@@ -73,13 +73,17 @@ class TcpProtocol:
         def from_bytes(cls, flag_bytes: bytes):
             assert len(flag_bytes) == 1, "Size of flags should be 1 byte (6 bits with 2 left-padding)"
             flags_int = struct.unpack("=B", flag_bytes)[0]
+            return cls.from_int(flags_int)
+
+        @classmethod
+        def from_int(cls, flags_int: int):
             return cls(
-                urg=bool(flags_int & (2**0)),
-                ack=bool(flags_int & (2**1)),
-                psh=bool(flags_int & (2**2)),
-                rst=bool(flags_int & (2**3)),
-                syn=bool(flags_int & (2**4)),
-                fin=bool(flags_int & (2**5)),
+                urg=bool(flags_int & (2**5)),
+                ack=bool(flags_int & (2**4)),
+                psh=bool(flags_int & (2**3)),
+                rst=bool(flags_int & (2**2)),
+                syn=bool(flags_int & (2**1)),
+                fin=bool(flags_int & (2**0)),
             )
 
         def __int__(self) -> int:
@@ -109,17 +113,21 @@ class TcpProtocol:
 
         @classmethod
         def from_bytes(cls, option_bytes: bytes):
+            return cls.from_bytes_with_remainder(option_bytes)[0]
+
+        @classmethod
+        def from_bytes_with_remainder(cls, option_bytes: bytes) -> (TcpProtocol.TcpOption, bytes):
             option_kind = option_bytes[0]
 
             if option_kind in (0, 1):
-                return cls(kind=option_kind)
+                return cls(kind=option_kind), option_bytes[1:]
 
             assert len(option_bytes) > 1, "Option is of kind > 1 but has no length or data!"
 
             option_length = option_bytes[1]
-            option_data = struct.unpack(f"={option_length - 2}s", option_bytes[2:])[0]
+            option_data = struct.unpack(f"={option_length - 2}s", option_bytes[2:option_length])[0]
 
-            return cls(kind=option_kind, length=option_length, data=option_data)
+            return cls(kind=option_kind, length=option_length, data=option_data), option_bytes[option_length:]
 
         def __len__(self):
             return self.length
@@ -134,8 +142,6 @@ class TcpProtocol:
             else:
                 option_bytes = bytes([self.kind, self.length]) + self.data
 
-            print(option_bytes)
-
             # Ensure result is the correct length
             assert len(option_bytes) == self.length
             return option_bytes
@@ -147,7 +153,6 @@ class TcpProtocol:
         seq_number: int
         ack_number: int
         data_offset: int
-        unused: int
         flags: TcpProtocol.TcpFlags
         recv_window: bytes
         checksum: int
@@ -217,8 +222,8 @@ class TcpProtocol:
 
         # Calculate the number of 32 bit words in the header
         MIN_TCP_HEADER_WORDS = 5
-        length_of_options = sum(len(o) for o in options)
-        data_offset = MIN_TCP_HEADER_WORDS + -(length_of_options // -32)
+        length_of_options_in_bytes = sum(len(o) for o in options)
+        data_offset = MIN_TCP_HEADER_WORDS + ((-4 * (length_of_options_in_bytes // -4)) // 4)
 
         # TODO: Calculate checksum using "psudo packet" mentioned in lectures...
 
@@ -230,7 +235,6 @@ class TcpProtocol:
             ack_number=0,
             data_offset=data_offset,
             # TODO: Need to find better values for the following or justify them being hardcoded...
-            unused=0,
             flags=flags,
             recv_window=0,
             checksum=1,
@@ -241,9 +245,52 @@ class TcpProtocol:
         return packet
 
     @staticmethod
-    def parse_packet(data: bytes) -> TcpPacket:
-        # TODO
-        pass
+    def parse_packet(packet_data: bytes) -> TcpPacket:
+        (
+            src_port,
+            dest_port,
+            seq_number,
+            ack_number,
+            padded_data_offset,
+            padded_flags,
+            recv_window,
+            checksum,
+            urgent_pointer,
+        ) = struct.unpack("=HHIIBBHHH", packet_data[:20])
+
+        data_offset = padded_data_offset >> 4
+        data_offset_bytes = data_offset * 4
+
+        flags = TcpProtocol.TcpFlags.from_int(padded_flags)
+
+        options_data = packet_data[20:data_offset_bytes]
+        print(options_data)
+        options = []
+        while options_data:
+            option, options_data = TcpProtocol.TcpOption.from_bytes_with_remainder(options_data)
+            print(options_data)
+            options.append(option)
+
+            # If option is of type options terminate then break
+            # TODO: Options KINDS should be some kind of ENUM!
+            if option.kind == 0:
+                break
+
+        data = packet_data[data_offset_bytes:]
+
+        return TcpProtocol.TcpPacket(
+            src_port=src_port,
+            dest_port=dest_port,
+            seq_number=seq_number,
+            ack_number=ack_number,
+            data_offset=data_offset,
+            flags=flags,
+            recv_window=recv_window,
+            checksum=checksum,
+            urgent_pointer=urgent_pointer,
+            options=options,
+            data=data,
+        )
 
     @staticmethod
     def get_exam_string(packet: TcpPacket) -> str:
