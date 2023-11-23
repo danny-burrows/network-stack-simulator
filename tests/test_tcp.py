@@ -51,6 +51,16 @@ def test_tcp_packet_to_bytes():
     )
     tcp_packet_bytes = tcp_packet.to_bytes()
 
+    # Minimal header (without options)
+    MINIMAL_HEADER_SIZE_BYTES = 20
+
+    # Single option padded to be 1 full 4-byte (32-bit) word
+    OPTIONS_SIZE_BYTES = 4
+
+    # NB: No data included so size is:
+    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
+
+    # Read and unpack just the minimal header bytes (without options)
     header_unpacked = struct.unpack("=HHIIBBHHH", tcp_packet_bytes[:20])
 
     assert header_unpacked == (

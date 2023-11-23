@@ -167,10 +167,15 @@ class TcpProtocol:
 
             options_bytes = [o.to_bytes() for o in self.options]
 
+            # Calc padding needed to ensure options are padded to the nearest 4-byte word
+            length_of_options = sum(len(o) for o in options_bytes)
+            options_padding = bytes(4 - (length_of_options % 4))
+
             header = src_dest_seq_ack_bytes + flags_data_offset + window_checksum_urg
 
             for option_bytes in options_bytes:
                 header += option_bytes
+            header += options_padding
 
             return header + self.data
 
