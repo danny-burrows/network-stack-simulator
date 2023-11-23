@@ -75,3 +75,65 @@ def test_tcp_packet_to_bytes():
         0,  # Urgent Pointer
         0,  # Options
     )
+
+
+def test_tcp_packet_to_bytes_with_options():
+    # Create a basic SYNACK packet with some options
+    tcp_flags = TcpProtocol.TcpFlags(syn=True)
+
+    tcp_options = [
+        # Maximum segment size option
+        TcpProtocol.TcpOption(kind=2, length=4, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=1),
+        TcpProtocol.TcpOption(kind=0),
+    ]
+
+    source_port = 59999
+    destination_port = 80
+    tcp_packet = TcpProtocol.create_packet(
+        source_port,
+        destination_port,
+        flags=tcp_flags,
+        options=tcp_options,
+    )
+    tcp_packet_bytes = tcp_packet.to_bytes()
+
+    # Minimal header (without options)
+    MINIMAL_HEADER_SIZE_BYTES = 20
+
+    # Options padded to be 2 full 4-byte (32-bit) words
+    OPTIONS_SIZE_BYTES = 8
+
+    # NB: No data included so size is:
+    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
+
+    # Read and unpack just the minimal header bytes (without options)
+    header_unpacked = struct.unpack("=HHIIBBHHH", tcp_packet_bytes[:20])
+    assert header_unpacked == (
+        59999,  # Source Port
+        80,  # Destination Port
+        0,  # Sequence Number
+        0,  # Ack Number
+        6 << 4,  # Data Offset (Right padded by 4)
+        0b00000010,  # Flags (Left padded by 2)
+        0,  # Window
+        1,  # Checksum
+        0,  # Urgent Pointer
+    )
+
+    options_unpacked = struct.unpack("=8B", tcp_packet_bytes[20:])
+    assert options_unpacked == (
+        # Max segment size
+        2,
+        4,
+        255,
+        255,
+        # Two No-Op Options
+        1,
+        1,
+        # End-of-options
+        0,
+        # Padding at the end to fill 2-byte words
+        0,
+    )
