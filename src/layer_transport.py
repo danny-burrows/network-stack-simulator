@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import struct
 from dataclasses import dataclass
 
 from logger import Logger
@@ -68,19 +69,22 @@ class TcpProtocol:
         syn: bool = False
         fin: bool = False
 
-        def _to_list(self) -> [bool]:
+        def __int__(self) -> int:
+            flags_int = 0
+            for i, b in enumerate(self._to_int_list()[::-1]):
+                flags_int += b * (2**i)
+            return flags_int
+
+        def _to_int_list(self) -> [bool]:
             flag_list = [int(self.urg), int(self.ack), int(self.psh), int(self.rst), int(self.syn), int(self.fin)]
             assert len(flag_list) == len(vars(self))
             return flag_list
 
         def to_string(self) -> str:
-            return "".join(str(i) for i in self._to_list())
+            return "".join(str(i) for i in self._to_int_list())
 
         def to_bytes(self) -> bytes:
-            flags_int = 0
-            for i, b in enumerate(self._to_list()):
-                flags_int += b * (2**i)
-            return bytes([flags_int])
+            return bytes([int(self)])
 
     @dataclass
     class TcpOption:
@@ -115,9 +119,9 @@ class TcpProtocol:
         dest_port: int
         seq_number: int
         ack_number: int
-        length: int
+        data_offset: int
         unused: int
-        flags: bytes
+        flags: TcpProtocol.TcpFlags
         recv_window: bytes
         checksum: int
         urgent_pointer: bytes
@@ -128,16 +132,61 @@ class TcpProtocol:
             pass
 
         def to_bytes(self) -> bytes:
-            pass
+            src_dest_seq_ack_bytes = struct.pack(
+                "=HHII",
+                self.src_port,
+                self.dest_port,
+                self.seq_number,
+                self.ack_number,
+            )
+
+            # Calculate data offset + reserved + flags (4) bytes
+            # NB: There are a total of 6 reserved bits
+
+            # Data offset must fit into 4 bits
+            assert self.data_offset < 2**4
+
+            # Pad-right with 4 of the 6 reserved bits
+            data_offset_padded = self.data_offset << 4
+
+            # The remaining 2 reserve bits are left-padded onto the flags
+            flags_int = int(self.flags)
+
+            flags_data_offset = struct.pack(
+                "=BB",
+                data_offset_padded,
+                flags_int,
+            )
+
+            window_checksum_urg = struct.pack(
+                "=HHH",
+                self.recv_window,
+                self.checksum,
+                self.urgent_pointer,
+            )
+
+            options_bytes = [o.to_bytes() for o in self.options]
+
+            header = src_dest_seq_ack_bytes + flags_data_offset + window_checksum_urg
+
+            for option_bytes in options_bytes:
+                header += option_bytes
+
+            return header + self.data
 
     @staticmethod
     def create_packet(
         src_port: int, dest_port: int, flags: TcpFlags, data: bytes = bytes(), options: [TcpOption] = []
     ) -> TcpPacket:
+        # There must be at least one option...
+        if options == []:
+            # Add a single terminating option
+            options = [TcpProtocol.TcpOption(kind=0)]
+
         # Calculate the number of 32 bit words in the header
         MIN_TCP_HEADER_WORDS = 5
         length_of_options = sum(len(o) for o in options)
-        MIN_TCP_HEADER_WORDS + -(length_of_options // -32)
+        data_offset = MIN_TCP_HEADER_WORDS + -(length_of_options // -32)
 
         # TODO: Calculate checksum using "psudo packet" mentioned in lectures...
 
@@ -147,10 +196,12 @@ class TcpProtocol:
             # Initialise SEQ and ACK numbers to 0
             seq_number=0,
             ack_number=0,
+            data_offset=data_offset,
             # TODO: Need to find better values for the following or justify them being hardcoded...
             unused=0,
-            flags=bytes(),
+            flags=flags,
             recv_window=0,
+            checksum=1,
             urgent_pointer=0,
             options=options,
             data=data,
