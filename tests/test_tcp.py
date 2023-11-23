@@ -61,7 +61,7 @@ def test_tcp_packet_to_bytes():
     assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
 
     # Read and unpack just the minimal header bytes (without options)
-    header_unpacked = struct.unpack("=HHIIBBHHH", tcp_packet_bytes[:20])
+    header_unpacked = struct.unpack("=HHIIBBHHHI", tcp_packet_bytes)
 
     assert header_unpacked == (
         59999,  # Source Port
@@ -73,4 +73,5 @@ def test_tcp_packet_to_bytes():
         0,  # Window
         1,  # Checksum
         0,  # Urgent Pointer
+        0,  # Options
     )
