@@ -105,7 +105,9 @@ class TcpProtocol:
 
     @dataclass
     class TcpOption:
-        # TODO: Could probably do with checking certain "kinds" arent given any data...
+        KIND_END_OF_OPTION_LIST = 0
+        KIND_NO_OPERATION = 1
+        KIND_MAXIMUM_SEGMENT_SIZE = 2
 
         kind: int
         length: int = 1
@@ -119,10 +121,10 @@ class TcpProtocol:
         def from_bytes_with_remainder(cls, option_bytes: bytes) -> (TcpProtocol.TcpOption, bytes):
             option_kind = option_bytes[0]
 
-            if option_kind in (0, 1):
+            if option_kind in (cls.KIND_END_OF_OPTION_LIST, cls.KIND_NO_OPERATION):
                 return cls(kind=option_kind), option_bytes[1:]
 
-            assert len(option_bytes) > 1, "Option is of kind > 1 but has no length or data!"
+            assert len(option_bytes) > 1, "Option is of kind with size > 1 but has no length or data!"
 
             option_length = option_bytes[1]
             option_data = struct.unpack(f"={option_length - 2}s", option_bytes[2:option_length])[0]
@@ -137,7 +139,7 @@ class TcpProtocol:
 
         def to_bytes(self) -> bytes:
             # If option is "End of Option List" or "No-Operation" then no length needed
-            if self.kind in (0, 1):
+            if self.kind in (self.KIND_END_OF_OPTION_LIST, self.KIND_NO_OPERATION):
                 option_bytes = bytes([self.kind])
             else:
                 option_bytes = bytes([self.kind, self.length]) + self.data
@@ -218,7 +220,7 @@ class TcpProtocol:
         # There must be at least one option...
         if options == []:
             # Add a single terminating option
-            options = [TcpProtocol.TcpOption(kind=0)]
+            options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST)]
 
         # Calculate the number of 32 bit words in the header
         MIN_TCP_HEADER_WORDS = 5
@@ -270,8 +272,7 @@ class TcpProtocol:
             options.append(option)
 
             # If option is of type options terminate then break
-            # TODO: Options KINDS should be some kind of ENUM!
-            if option.kind == 0:
+            if option.kind == TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST:
                 break
 
         data = packet_data[data_offset_bytes:]
