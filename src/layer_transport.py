@@ -70,13 +70,11 @@ class TcpProtocol:
         fin: bool = False
 
         @classmethod
-        def from_bytes(cls, flag_bytes: bytes):
-            assert len(flag_bytes) == 1, "Size of flags should be 1 byte (6 bits with 2 left-padding)"
-            flags_int = struct.unpack("=B", flag_bytes)[0]
-            return cls.from_int(flags_int)
+        def from_bytes(cls, flags_bytes: bytes) -> TcpProtocol.TcpFlags:
+            return cls.from_int(struct.unpack("=B", flags_bytes)[0])
 
         @classmethod
-        def from_int(cls, flags_int: int):
+        def from_int(cls, flags_int: int) -> TcpProtocol.TcpFlags:
             return cls(
                 urg=bool(flags_int & (2**5)),
                 ack=bool(flags_int & (2**4)),
@@ -87,15 +85,10 @@ class TcpProtocol:
             )
 
         def __int__(self) -> int:
-            flags_int = 0
-            for i, b in enumerate(self._to_int_list()[::-1]):
-                flags_int += b * (2**i)
-            return flags_int
+            return sum(v * 2**i for i, v in enumerate(self._to_int_list()[::-1]))
 
-        def _to_int_list(self) -> [bool]:
-            flag_list = [int(self.urg), int(self.ack), int(self.psh), int(self.rst), int(self.syn), int(self.fin)]
-            assert len(flag_list) == len(vars(self))
-            return flag_list
+        def _to_int_list(self) -> [int]:
+            return [int(v) for v in [self.urg, self.ack, self.psh, self.rst, self.syn, self.fin]]
 
         def to_string(self) -> str:
             return "".join(str(i) for i in self._to_int_list())
@@ -103,12 +96,13 @@ class TcpProtocol:
         def to_bytes(self) -> bytes:
             return bytes([int(self)])
 
+    class TcpOptionKind:
+        END_OF_OPTION_LIST = 0
+        NO_OPERATION = 1
+        MAXIMUM_SEGMENT_SIZE = 2
+
     @dataclass
     class TcpOption:
-        KIND_END_OF_OPTION_LIST = 0
-        KIND_NO_OPERATION = 1
-        KIND_MAXIMUM_SEGMENT_SIZE = 2
-
         kind: int
         length: int = 1
         data: bytes = bytes()
@@ -121,7 +115,7 @@ class TcpProtocol:
         def from_bytes_with_remainder(cls, option_bytes: bytes) -> (TcpProtocol.TcpOption, bytes):
             option_kind = option_bytes[0]
 
-            if option_kind in (cls.KIND_END_OF_OPTION_LIST, cls.KIND_NO_OPERATION):
+            if option_kind in (TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST, TcpProtocol.TcpOptionKind.NO_OPERATION):
                 return cls(kind=option_kind), option_bytes[1:]
 
             assert len(option_bytes) > 1, "Option is of kind with size > 1 but has no length or data!"
@@ -139,7 +133,7 @@ class TcpProtocol:
 
         def to_bytes(self) -> bytes:
             # If option is "End of Option List" or "No-Operation" then no length needed
-            if self.kind in (self.KIND_END_OF_OPTION_LIST, self.KIND_NO_OPERATION):
+            if self.kind in (TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST, TcpProtocol.TcpOptionKind.NO_OPERATION):
                 option_bytes = bytes([self.kind])
             else:
                 option_bytes = bytes([self.kind, self.length]) + self.data
@@ -220,7 +214,7 @@ class TcpProtocol:
         # There must be at least one option...
         if options == []:
             # Add a single terminating option
-            options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST)]
+            options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)]
 
         # Calculate the number of 32 bit words in the header
         MIN_TCP_HEADER_WORDS = 5
@@ -272,7 +266,7 @@ class TcpProtocol:
             options.append(option)
 
             # If option is of type options terminate then break
-            if option.kind == TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST:
+            if option.kind == TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST:
                 break
 
         data = packet_data[data_offset_bytes:]

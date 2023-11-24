@@ -25,21 +25,21 @@ def test_tcp_parse_flags():
 
 
 def test_tcp_option_to_string():
-    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST)
+    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)
     tcp_option_string = tcp_option.to_string()
 
     assert tcp_option_string == "01"
 
 
 def test_tcp_option_to_bytes():
-    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST)
+    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)
     tcp_option_bytes = tcp_option.to_bytes()
 
     assert tcp_option_bytes == bytes([0])
 
 
 def test_tcp_option_to_bytes_with_data():
-    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_MAXIMUM_SEGMENT_SIZE, length=3, data=bytes([1]))
+    tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, length=3, data=bytes([1]))
     tcp_option_bytes = tcp_option.to_bytes()
 
     assert tcp_option_bytes == bytes([2, 3, 1])
@@ -49,7 +49,7 @@ def test_tcp_parse_option_with_no_data():
     tcp_option_bytes = bytes([0])
     tcp_option = TcpProtocol.TcpOption.from_bytes(tcp_option_bytes)
 
-    assert tcp_option == TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST)
+    assert tcp_option == TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)
 
 
 def test_tcp_parse_option_with_data():
@@ -57,7 +57,7 @@ def test_tcp_parse_option_with_data():
     tcp_option = TcpProtocol.TcpOption.from_bytes(tcp_option_bytes)
 
     assert tcp_option == TcpProtocol.TcpOption(
-        kind=TcpProtocol.TcpOption.KIND_MAXIMUM_SEGMENT_SIZE, length=4, data=bytes([0, 255])
+        kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, length=4, data=bytes([0, 255])
     )
 
 
@@ -107,11 +107,11 @@ def test_tcp_packet_to_bytes_with_options():
     tcp_options = [
         # Maximum segment size option
         TcpProtocol.TcpOption(
-            kind=TcpProtocol.TcpOption.KIND_MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
+            kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
         ),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
@@ -187,11 +187,11 @@ def test_tcp_parse_packet_with_options():
     tcp_options = [
         # Maximum segment size option
         TcpProtocol.TcpOption(
-            kind=TcpProtocol.TcpOption.KIND_MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
+            kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
         ),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
@@ -214,11 +214,11 @@ def test_tcp_parse_packet_with_options_and_data():
     tcp_options = [
         # Maximum segment size option
         TcpProtocol.TcpOption(
-            kind=TcpProtocol.TcpOption.KIND_MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
+            kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, length=4, data=struct.pack("H", 65535)
         ),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_NO_OPERATION),
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOption.KIND_END_OF_OPTION_LIST),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
