@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from logger import Logger
 from layer_physical import PhysicalLayer
@@ -101,46 +101,60 @@ class TcpProtocol:
         NO_OPERATION = 1
         MAXIMUM_SEGMENT_SIZE = 2
 
+        @classmethod
+        def get_single_byte_kinds(cls):
+            return set((cls.END_OF_OPTION_LIST, cls.NO_OPERATION))
+
+        @classmethod
+        def get_all_kinds(cls):
+            return set((cls.END_OF_OPTION_LIST, cls.NO_OPERATION, cls.MAXIMUM_SEGMENT_SIZE))
+
     @dataclass
-    class TcpOption:
-        kind: int
-        length: int = 1
+    class TcpOption(Logger):
+        kind: TcpProtocol.TcpOptionKind
+        length: int = field(init=False)
         data: bytes = bytes()
+
+        def __post_init__(self):
+            super().__init__()
+            self.length = 1 if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds() else 2 + len(self.data)
+
+        def __len__(self):
+            return self.length
 
         @classmethod
         def from_bytes(cls, option_bytes: bytes):
-            return cls.from_bytes_with_remainder(option_bytes)[0]
+            (option, _remaining_bytes) = cls.from_bytes_with_remainder(option_bytes)
+            return option
 
         @classmethod
         def from_bytes_with_remainder(cls, option_bytes: bytes) -> (TcpProtocol.TcpOption, bytes):
             option_kind = option_bytes[0]
 
-            if option_kind in (TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST, TcpProtocol.TcpOptionKind.NO_OPERATION):
+            if option_kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
                 return cls(kind=option_kind), option_bytes[1:]
 
-            assert len(option_bytes) > 1, "Option is of kind with size > 1 but has no length or data!"
+            if option_kind not in TcpProtocol.TcpOptionKind.get_all_kinds():
+                raise NotImplementedError(f"Unsupported option kind: {option_kind}")
+
+            if len(option_bytes) <= 1:
+                raise ValueError("Option kind requires length field but no length was specified!")
 
             option_length = option_bytes[1]
-            option_data = struct.unpack(f"={option_length - 2}s", option_bytes[2:option_length])[0]
-
-            return cls(kind=option_kind, length=option_length, data=option_data), option_bytes[option_length:]
-
-        def __len__(self):
-            return self.length
+            option_data = option_bytes[2:option_length]
+            return cls(kind=option_kind, data=option_data), option_bytes[option_length:]
 
         def to_string(self) -> str:
-            return f"{self.kind}{self.length}{self.data if self.data else ''}"
+            if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
+                return str(self.kind)
+            else:
+                return f"{self.kind}{self.length}{self.data if self.data else ''}"
 
         def to_bytes(self) -> bytes:
-            # If option is "End of Option List" or "No-Operation" then no length needed
-            if self.kind in (TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST, TcpProtocol.TcpOptionKind.NO_OPERATION):
-                option_bytes = bytes([self.kind])
+            if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
+                return bytes([self.kind])
             else:
-                option_bytes = bytes([self.kind, self.length]) + self.data
-
-            # Ensure result is the correct length
-            assert len(option_bytes) == self.length
-            return option_bytes
+                return bytes([self.kind, self.length]) + self.data
 
     @dataclass
     class TcpPacket:
