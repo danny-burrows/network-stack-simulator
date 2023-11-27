@@ -8,58 +8,10 @@ from logger import Logger
 from layer_physical import PhysicalLayer
 
 
-class TcpSocket(Logger):
-    """Very small mock socket that imitates the real interface
-    used to interact with TCP Streams.
-    """
-
-    transport: TransportLayer
-
-    def __init__(self, transport: TransportLayer) -> None:
-        super().__init__()
-        self.transport = transport
-
-    @staticmethod
-    def _parse_addr(addr: str) -> (str, int):
-        # TODO: Some validation for ip/domain correctness?
-        host, port = addr.split(":")
-        return host, int(port)
-
-    def connect(self, addr: str) -> None:
-        # Hardcode the client IP address
-        host = "192.168.1.6"
-
-        # Assign a random dynamic port for the client to use.
-        # Dynamic ports are in the range 49152 to 65535.
-        port = random.randint(49152, 65535)
-
-        self._bind(host, port)
-
-        # Calculate destination host and port.
-        dest_host, dest_port = self._parse_addr(addr)
-
-        # Initiate handshake by sending SYN packet to destination.
-        self.transport.initiate_handshake(self.port, dest_port)
-
-    def _bind(self, host: str, port: int) -> None:
-        self.host, self.port = host, port
-
-    def bind(self, addr: str) -> None:
-        self._bind(*self._parse_addr(addr))
-
-    def accept(self) -> None:
-        # Open file and wait for some SYN packet...
-        self.transport.accept_incoming_handshake(self.port)
-        pass
-
-    def receive(self) -> bytes:
-        return self.transport.receive()
-
-    def send(self, data: bytes) -> None:
-        self.transport.send(data)
-
-
 class TcpProtocol:
+    # TODO: Make sure this BUFSIZE is correct.
+    BUFSIZE = 800
+
     @dataclass
     class TcpFlags:
         urg: bool = False
@@ -305,17 +257,81 @@ class TcpProtocol:
         pass
 
 
+class TcpConnection:
+    src_host: str
+    src_port: str
+    dest_host: str
+    dest_port: str
+    send_buffer: bytes = bytes()
+    recv_buffer: bytes = bytes()
+    is_handshaking: bool = False
+    has_handshaked: bool = False
+
+
+class TcpSocket(Logger):
+    """Very small mock socket that imitates the real interface
+    used to interact with TCP Streams.
+    """
+
+    @staticmethod
+    def _parse_addr(addr: str) -> (str, int):
+        # TODO: Some validation for ip/domain correctness?
+        host, port = addr.split(":")
+        return host, int(port)
+
+    transport: TransportLayer
+    conn: TcpConnection
+
+    def __init__(self, transport: TransportLayer) -> None:
+        super().__init__()
+        self.transport = transport
+        self.conn = TcpConnection()
+
+    def connect(self, addr: str) -> None:
+        # Hardcode the client IP address
+        src_host = "192.168.1.6"
+
+        # Assign a random dynamic port for the client to use.
+        # Dynamic ports are in the range 49152 to 65535.
+        src_port = random.randint(49152, 65535)
+
+        # Configure connection with src info.
+        self.conn.src_host = src_host
+        self.conn.src_port = src_port
+
+        # Calculate destination host and port then configure connection.
+        dest_host, dest_port = self._parse_addr(addr)
+        self.conn.dest_host = dest_host
+        self.conn.dest_port = dest_port
+
+        # Tell transport layer to initiate handshake procedure on connection
+        self.transport.initiate_tcp_handshake(self.conn)
+
+    def bind(self, addr: str) -> None:
+        # Unpack addr then update configuration.
+        host, port = self._parse_addr(addr)
+        self.conn.src_host = host
+        self.conn.src_port = port
+
+    def accept(self) -> None:
+        # Tell transport layer to wait for a handshake procedure.
+        self.transport.accept_incoming_tcp_handshake(self.conn)
+
+    def receive(self, bufsize: int) -> bytes:
+        # Receive 'bufsize' bytes of application data
+        return self.transport.receive(self.conn, bufsize)
+
+    def send(self, data: bytes) -> None:
+        # Send application layer bytes.
+        return self.transport.send(self.conn, data)
+
+
 class TransportLayer(Logger):
     """Simulated transport layer capable of handling a single connection
     between a source host/port (ourselves) and some destination host/port.
     """
 
-    # TODO: Tcp State
-
     physical: PhysicalLayer
-
-    src_port: int
-    dest_port: int
 
     def __init__(self) -> None:
         super().__init__()
@@ -323,79 +339,123 @@ class TransportLayer(Logger):
 
     def create_socket(self) -> TcpSocket:
         return TcpSocket(self)
-
-    def initiate_handshake(self, src_port, dest_port):
+    
+    def initiate_tcp_handshake(self, conn: TcpConnection) -> int:
         # Perform three-way handshake to initiate a connection with addr.
+        self.logger.info(f"Initiating handshake on {conn.src_port}->{conn.dest_port}.")
+        conn.is_handshaking = True
 
-        # Create and send a SYN packet.
-        syn_packet = TcpProtocol.create_packet(src_port, dest_port, TcpProtocol.TcpFlags(syn=True))
-        self._send_packet(syn_packet)
+        # 1. Create and send a SYN packet.
+        self.logger.debug("Handshake SYN.")
+        syn_packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(syn=True))
+        self._send_tcp_packet(syn_packet)
 
-        # Wait to recive a SYNACK.
-        recv_packet = self._receive_packet()
+        # 2. Wait to receive a SYNACK packet.
+        self.logger.debug("Handshake SYNACK.")
+        recv_packet = self._receive_tcp_packet()
 
         # Check recv packet has is SYNACK flags set.
         # TODO: More error handling? Probably better error handling...
         if not (recv_packet.flags.syn and recv_packet.flags.ack):
             raise Exception("Simulation Error: Server responded with unrecognised packet in sequence!")
 
-        # 3. Send an ACK.
-        ack_packet = TcpProtocol.create_packet(src_port, dest_port, TcpProtocol.TcpFlags(ack=True))
-        self._send_packet(ack_packet)
+        # 3. Send a final response ACK packet.
+        self.logger.debug("Handshake ACK.")
+        ack_packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(ack=True))
+        self._send_tcp_packet(ack_packet)
 
-        self.src_port = src_port
-        self.dest_port = dest_port
+        # Update connection state
+        conn.is_handshaking = False
+        conn.has_handshaked = True
 
-    def accept_incoming_handshake(self, src_port) -> int:
+    def accept_incoming_tcp_handshake(self, conn: TcpConnection) -> int:
+        # Receiving end of three-way handshake to initiate a connection with any request.
+        self.logger.info(f"Accepting handshake on {conn.src_port}.")
+        conn.is_handshaking = True
+
+        # 1. Wait to receive a SYN packet.
+        self.logger.debug("Handshake SYN.")
         while True:
-            # Wait to receive a packet.
-            recv_packet = self._receive_packet()
 
-            # Check recv packet has is SYN flag set.
-            if recv_packet.flags.syn:
+            # Wait to receive a packet.
+            recv_packet = self._receive_tcp_packet()
+
+            # Check packet has SYN set.
+            if not recv_packet.flags.syn:
+                self.logger.warn(f"Server waiting to accept connections received non-SYN packet: {recv_packet.to_string()}")
+
+            # Check packet has correct dest port.
+            elif recv_packet.dest_port != conn.src_port:
+                self.logger.warn(f"Server waiting to accept connections received packet for incorrect port: {recv_packet.to_string()}")
+            
+            # Found a valid packet so perform handshake.
+            else:
                 break
 
-            self.logger.warn(f"Server waiting to accept connections recived NON-SYN packet: {recv_packet.to_string()}")
+        # Update connection with current connection.
+        conn.dest_port = recv_packet.src_port
 
-        self.src_port = src_port
-        self.dest_port = recv_packet.src_port
+        # 2. Create and send a SYNACK packet.
+        self.logger.debug("Handshake SYNACK.")
+        syn_ack_packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(syn=True, ack=True))
+        self._send_tcp_packet(syn_ack_packet)
 
-        # Create and send a SYNACK packet.
-        syn_ack_packet = TcpProtocol.create_packet(
-            src_port, recv_packet.src_port, TcpProtocol.TcpFlags(syn=True, ack=True)
-        )
-        self._send_packet(syn_ack_packet)
-
-        # Wait to receive a ACK packet.
-        recv_packet = self._receive_packet()
+        # 3. Wait to receive a FINAL ACK packet.
+        self.logger.debug("Handshake ACK.")
+        recv_packet = self._receive_tcp_packet()
 
         # Check recv packet has is ACK flags set.
         # TODO: More error handling? Probably better error handling...
         if not recv_packet.flags.ack:
             raise Exception("Simulation Error: Server responded with unrecognised packet in sequence!")
 
-    def close_connection(target_addr):
-        # Send FIN packet to target_addr to close the connection.
-        pass
+        # Update connection state
+        conn.is_handshaking = False
+        conn.has_handshaked = True
 
-    def _receive_packet(self) -> TcpProtocol.TcpPacket:
+    def _receive_tcp_packet(self) -> TcpProtocol.TcpPacket:
         packet = TcpProtocol.parse_packet(self.physical.receive())
         self.logger.debug("⬆️  [Physical->TCP]")
         self.logger.info(f"Received {packet=}")
         return packet
 
-    def _send_packet(self, packet: TcpProtocol.TcpPacket) -> None:
+    def _send_tcp_packet(self, packet: TcpProtocol.TcpPacket) -> None:
         self.logger.info(f"Sending {packet=}...")
         self.logger.debug("⬇️  [TCP->Physical]")
         self.physical.send(packet.to_bytes())
 
-    def receive(self) -> bytes:
-        packet = self._receive_packet()
-        return packet.data
+    def receive(self, conn: TcpConnection, bufsize: int) -> bytes:
+        # Ensure connection is in a valid state.
+        assert(conn.has_handshaked)
 
-    def send(self, data: bytes) -> None:
-        # TODO: Ensure connection has been established and fill out flags and options
-        packet = TcpProtocol.create_packet(
-            self.src_port, self.dest_port, TcpProtocol.TcpFlags(ack=True), data=data, options=[]
-        )
-        self._send_packet(packet)
+        # Receive packets if have no ready data.
+        if len(conn.recv_buffer) == 0:
+
+            # Receive first incoming packet.
+            packet = self._receive_tcp_packet()
+            
+            # Check packet is coming for the solitary connection.
+            assert(packet.dest_port == conn.src_port and packet.src_port == conn.dest_port)
+
+            # TODO: Check packet has correct flags.
+            # TODO: Handle ACK then PSH.
+
+            # Receive data into the recv_buffer.
+            conn.recv_buffer += packet.data
+
+        # Receive 'bufsize' bytes of application data
+        data = conn.recv_buffer[:bufsize]
+        conn.recv_buffer = conn.recv_buffer[bufsize:]
+        return data
+
+    def send(self, conn: TcpConnection, data: bytes) -> None:
+        # Ensure connection is in a valid state.
+        assert(conn.has_handshaked)
+
+        # TODO: Split data up into packets.
+
+        # Create single packet with all application data.
+        packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(ack=True), data=data, options=[])
+
+        # Send single packet.
+        self._send_tcp_packet(packet)
