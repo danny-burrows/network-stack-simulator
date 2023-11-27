@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import struct
 from dataclasses import dataclass, field
+from enum import IntEnum
 
 from logger import Logger
 from layer_physical import PhysicalLayer
@@ -23,90 +24,95 @@ class TcpProtocol:
 
         @classmethod
         def from_bytes(cls, flags_bytes: bytes) -> TcpProtocol.TcpFlags:
-            return cls.from_int(struct.unpack("=B", flags_bytes)[0])
+            # Unpack packed bytes as unsigned char bitmask then construct
+            flags_bitmask = struct.unpack("=B", flags_bytes)[0]
+            return cls.from_bitmask(flags_bitmask)
 
         @classmethod
-        def from_int(cls, flags_int: int) -> TcpProtocol.TcpFlags:
+        def from_bitmask(cls, flags_bitmask: int) -> TcpProtocol.TcpFlags:
+            # Extract first 6 bits into bools and construct
             return cls(
-                urg=bool(flags_int & (2**5)),
-                ack=bool(flags_int & (2**4)),
-                psh=bool(flags_int & (2**3)),
-                rst=bool(flags_int & (2**2)),
-                syn=bool(flags_int & (2**1)),
-                fin=bool(flags_int & (2**0)),
+                urg=bool(flags_bitmask & (2**5)),
+                ack=bool(flags_bitmask & (2**4)),
+                psh=bool(flags_bitmask & (2**3)),
+                rst=bool(flags_bitmask & (2**2)),
+                syn=bool(flags_bitmask & (2**1)),
+                fin=bool(flags_bitmask & (2**0)),
             )
 
-        def __int__(self) -> int:
-            return sum(v * 2**i for i, v in enumerate(self._to_int_list()[::-1]))
-
-        def _to_int_list(self) -> [int]:
+        def to_bytes(self) -> bytes:
+            # Convert to bitmask then directly to bytes
+            return bytes([ self.to_bitmask() ])
+        
+        def to_bitmask_list(self) -> [int]:
+            # Convert to list of flags as bits
             return [int(v) for v in [self.urg, self.ack, self.psh, self.rst, self.syn, self.fin]]
+        
+        def to_bitmask(self) -> int:
+            # Convert to bitmask for flags
+            return sum(v * 2**i for i, v in enumerate(self.to_bitmask_list()[::-1]))
 
         def to_string(self) -> str:
-            return "".join(str(i) for i in self._to_int_list())
+            # Stringify as bits from bitmask
+            return "".join(str(i) for i in self.to_bitmask_list())
+    
+        def __int__(self) -> int:
+            return self.to_bitmask()
 
-        def to_bytes(self) -> bytes:
-            return bytes([int(self)])
-
-    class TcpOptionKind:
+    class TcpOptionKind(IntEnum):
         END_OF_OPTION_LIST = 0
         NO_OPERATION = 1
         MAXIMUM_SEGMENT_SIZE = 2
 
-        @classmethod
-        def get_single_byte_kinds(cls):
-            return set((cls.END_OF_OPTION_LIST, cls.NO_OPERATION))
-
-        @classmethod
-        def get_all_kinds(cls):
-            return set((cls.END_OF_OPTION_LIST, cls.NO_OPERATION, cls.MAXIMUM_SEGMENT_SIZE))
+    OPTIONS_SINGLE_BYTE_KINDS = set((TcpOptionKind.END_OF_OPTION_LIST, TcpOptionKind.NO_OPERATION))
+    OPTIONS_ALL_KINDS = set((TcpOptionKind.END_OF_OPTION_LIST, TcpOptionKind.NO_OPERATION, TcpOptionKind.MAXIMUM_SEGMENT_SIZE))
 
     @dataclass
     class TcpOption(Logger):
-        kind: TcpProtocol.TcpOptionKind
-        length: int = field(init=False)
-        data: bytes = bytes()
-
-        def __post_init__(self):
-            super().__init__()
-            self.length = 1 if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds() else 2 + len(self.data)
-
-        def __len__(self):
-            return self.length
-
-        @classmethod
-        def from_bytes(cls, option_bytes: bytes):
-            (option, _remaining_bytes) = cls.from_bytes_with_remainder(option_bytes)
+        @staticmethod
+        def from_bytes(option_bytes: bytes) -> TcpProtocol.TcpOption:
+            (option, _remaining_bytes) = TcpProtocol.TcpOption.from_bytes_with_remainder(option_bytes)
             return option
 
-        @classmethod
-        def from_bytes_with_remainder(cls, option_bytes: bytes) -> (TcpProtocol.TcpOption, bytes):
+        @staticmethod
+        def from_bytes_with_remainder(option_bytes: bytes) -> tuple[TcpProtocol.TcpOption, bytes]:
+            # Byte 1: Option kind
             option_kind = option_bytes[0]
 
-            if option_kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
-                return cls(kind=option_kind), option_bytes[1:]
+            if option_kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS:
+                return TcpProtocol.TcpOption(kind=option_kind), option_bytes[1:]
 
-            if option_kind not in TcpProtocol.TcpOptionKind.get_all_kinds():
+            if option_kind not in TcpProtocol.OPTIONS_ALL_KINDS:
                 raise NotImplementedError(f"Unsupported option kind: {option_kind}")
 
             if len(option_bytes) <= 1:
                 raise ValueError("Option kind requires length field but no length was specified!")
 
+            # Byte 2: Length of data
             option_length = option_bytes[1]
-            option_data = option_bytes[2:option_length]
-            return cls(kind=option_kind, data=option_data), option_bytes[option_length:]
 
+            # Byte 3+: Option data
+            option_data = option_bytes[2:option_length]
+
+            return TcpProtocol.TcpOption(kind=option_kind, data=option_data), option_bytes[option_length:]
+
+        kind: TcpProtocol.TcpOptionKind
+        data: bytes = bytes()
+
+        def __len__(self):
+            return 1 if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS else 2 + len(self.data)
+        
         def to_string(self) -> str:
-            if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
+            if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS:
                 return str(self.kind)
             else:
                 return f"{self.kind}{self.length}{self.data if self.data else ''}"
 
         def to_bytes(self) -> bytes:
-            if self.kind in TcpProtocol.TcpOptionKind.get_single_byte_kinds():
-                return bytes([self.kind])
+            if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS:
+                return bytes([ self.kind ])
             else:
-                return bytes([self.kind, self.length]) + self.data
+                return bytes([ self.kind, self.length ]) + self.data
 
     @dataclass
     class TcpPacket:
@@ -119,13 +125,15 @@ class TcpProtocol:
         recv_window: bytes
         checksum: int
         urgent_pointer: bytes
-        options: [TcpProtocol.TcpOption]
+        options: list[TcpProtocol.TcpOption]
         data: bytes
 
         def to_string(self) -> str:
-            pass
+            # TODO: Implement nice to_string()
+            return self.__str__()
 
         def to_bytes(self) -> bytes:
+            # Pack ports, seq, and ack number
             src_dest_seq_ack_bytes = struct.pack(
                 "=HHII",
                 self.src_port,
@@ -134,24 +142,25 @@ class TcpProtocol:
                 self.ack_number,
             )
 
-            # Calculate data offset + reserved + flags (4) bytes
-            # NB: There are a total of 6 reserved bits
+            # Calculate data offset (4) + reserved (6) + flags (6) bytes = 16 bits
 
             # Data offset must fit into 4 bits
             assert self.data_offset < 2**4
 
-            # Pad-right with 4 of the 6 reserved bits
+            # Pad right of data offset right 4 / 6 reserved bits
             data_offset_padded = self.data_offset << 4
 
-            # The remaining 2 reserve bits are left-padded onto the flags
-            flags_int = int(self.flags)
+            # Left of flags contains last 2 / 6 reserved bits
+            flags_bitmask = self.flags.to_bitmask()
 
+            # Pack all of the above into 16 bits
             flags_data_offset = struct.pack(
                 "=BB",
                 data_offset_padded,
-                flags_int,
+                flags_bitmask,
             )
-
+            
+            # Pack some remaining variables
             window_checksum_urg = struct.pack(
                 "=HHH",
                 self.recv_window,
@@ -159,24 +168,28 @@ class TcpProtocol:
                 self.urgent_pointer,
             )
 
-            options_bytes = [o.to_bytes() for o in self.options]
+            # Pack options bytes up
+            options_bytes = [ o.to_bytes() for o in self.options ]
 
             # Calc padding needed to ensure options are padded to the nearest 4-byte word
             length_of_options = sum(len(o) for o in options_bytes)
             options_padding = bytes(4 - (length_of_options % 4))
 
+            # Construct header with all packed bits, including options and options padding
             header = src_dest_seq_ack_bytes + flags_data_offset + window_checksum_urg
-
             for option_bytes in options_bytes:
                 header += option_bytes
             header += options_padding
 
+            # Return final packed header + data bytes
             return header + self.data
 
     @staticmethod
     def create_packet(
-        src_port: int, dest_port: int, flags: TcpFlags, data: bytes = bytes(), options: [TcpOption] = []
+        src_port: int, dest_port: int, flags: TcpFlags, data: bytes = bytes(), options: list[TcpOption] = []
     ) -> TcpPacket:
+        # TODO: Look at why there needs to be a single options.
+        #       Related code in to_bytes() with length_of_options.
         # There must be at least one option...
         if options == []:
             # Add a single terminating option
@@ -207,36 +220,42 @@ class TcpProtocol:
         return packet
 
     @staticmethod
-    def parse_packet(packet_data: bytes) -> TcpPacket:
+    def parse_packet(packet_bytes: bytes) -> TcpPacket:
+        # View first 20 bytes for header and parse variables
         (
             src_port,
             dest_port,
             seq_number,
             ack_number,
-            padded_data_offset,
-            padded_flags,
+            data_offset,
+            flags_bitmask,
             recv_window,
             checksum,
             urgent_pointer,
-        ) = struct.unpack("=HHIIBBHHH", packet_data[:20])
+        ) = struct.unpack("=HHIIBBHHH", packet_bytes[:20])
 
-        data_offset = padded_data_offset >> 4
-        data_offset_bytes = data_offset * 4
+        # Calculate data starting location
+        data_offset = data_offset >> 4
+        data_offset = data_offset * 4
 
-        flags = TcpProtocol.TcpFlags.from_int(padded_flags)
+        # Parse flags bitmask into nice struct
+        flags = TcpProtocol.TcpFlags.from_bitmask(flags_bitmask)
 
-        options_data = packet_data[20:data_offset_bytes]
-        options = []
+        # View calculated options bytes and parse options
+        options_data = packet_bytes[20:data_offset]
+        options: list[TcpProtocol.TcpOption] = []
         while options_data:
             option, options_data = TcpProtocol.TcpOption.from_bytes_with_remainder(options_data)
             options.append(option)
 
-            # If option is of type options terminate then break
+            # Stop parsing options when reached END_OF_OPTION_LIST
             if option.kind == TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST:
                 break
 
-        data = packet_data[data_offset_bytes:]
+        # View calculated data bytes
+        data = packet_bytes[data_offset:]
 
+        # Put all into final struct and return
         return TcpProtocol.TcpPacket(
             src_port=src_port,
             dest_port=dest_port,
@@ -416,11 +435,11 @@ class TransportLayer(Logger):
     def _receive_tcp_packet(self) -> TcpProtocol.TcpPacket:
         packet = TcpProtocol.parse_packet(self.physical.receive())
         self.logger.debug("⬆️  [Physical->TCP]")
-        self.logger.info(f"Received {packet=}")
+        self.logger.info(f"Received {packet.to_string()=}")
         return packet
 
     def _send_tcp_packet(self, packet: TcpProtocol.TcpPacket) -> None:
-        self.logger.info(f"Sending {packet=}...")
+        self.logger.info(f"Sending {packet.to_string()=}...")
         self.logger.debug("⬇️  [TCP->Physical]")
         self.physical.send(packet.to_bytes())
 
@@ -455,7 +474,7 @@ class TransportLayer(Logger):
         # TODO: Split data up into packets.
 
         # Create single packet with all application data.
-        packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(ack=True), data=data, options=[])
+        packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(ack=True), data=data)
 
         # Send single packet.
         self._send_tcp_packet(packet)
