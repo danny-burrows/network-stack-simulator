@@ -405,7 +405,10 @@ class TransportLayer(Logger):
 
         # 1. Create and send a SYN packet.
         self.logger.debug("Handshake SYN.")
-        syn_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpProtocol.TcpFlags(syn=True))
+        syn_flags = TcpProtocol.TcpFlags(syn=True)
+        mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
+        syn_options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
+        syn_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, flags=syn_flags, options=syn_options)
         self._send_tcp_packet(dest_host, tcp_conn, syn_packet)
 
         # 2. Wait to receive a SYNACK packet.
