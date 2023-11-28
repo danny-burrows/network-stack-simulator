@@ -10,6 +10,10 @@ from layer_physical import PhysicalLayer
 
 
 class TcpProtocol:
+    # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
+    # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
+    HARDCODED_MSS = 512
+
     # TODO: Make sure this BUFSIZE is correct.
     BUFSIZE = 800
 
@@ -25,7 +29,7 @@ class TcpProtocol:
         @classmethod
         def from_bytes(cls, flags_bytes: bytes) -> TcpProtocol.TcpFlags:
             # Unpack packed bytes as unsigned char bitmask then construct
-            flags_bitmask = struct.unpack("=B", flags_bytes)[0]
+            flags_bitmask = struct.unpack(">B", flags_bytes)[0]
             return cls.from_bitmask(flags_bitmask)
 
         @classmethod
@@ -42,12 +46,12 @@ class TcpProtocol:
 
         def to_bytes(self) -> bytes:
             # Convert to bitmask then directly to bytes
-            return bytes([ self.to_bitmask() ])
-        
+            return bytes([self.to_bitmask()])
+
         def to_bitmask_list(self) -> [int]:
             # Convert to list of flags as bits
             return [int(v) for v in [self.urg, self.ack, self.psh, self.rst, self.syn, self.fin]]
-        
+
         def to_bitmask(self) -> int:
             # Convert to bitmask for flags
             return sum(v * 2**i for i, v in enumerate(self.to_bitmask_list()[::-1]))
@@ -67,7 +71,9 @@ class TcpProtocol:
         MAXIMUM_SEGMENT_SIZE = 2
 
     OPTIONS_SINGLE_BYTE_KINDS = set((TcpOptionKind.END_OF_OPTION_LIST, TcpOptionKind.NO_OPERATION))
-    OPTIONS_ALL_KINDS = set((TcpOptionKind.END_OF_OPTION_LIST, TcpOptionKind.NO_OPERATION, TcpOptionKind.MAXIMUM_SEGMENT_SIZE))
+    OPTIONS_ALL_KINDS = set(
+        (TcpOptionKind.END_OF_OPTION_LIST, TcpOptionKind.NO_OPERATION, TcpOptionKind.MAXIMUM_SEGMENT_SIZE)
+    )
 
     @dataclass
     class TcpOption(Logger):
@@ -105,24 +111,24 @@ class TcpProtocol:
         def __post_init__(self):
             super().__init__()
             self.len = 1 if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS else 2 + len(self.data)
-        
+
         def to_string(self) -> str:
             return self.__str__()
 
         def to_bytes(self) -> bytes:
             if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS:
-                return bytes([ self.kind ])
+                return bytes([self.kind])
             else:
-                return bytes([ self.kind, self.length ]) + self.data
+                return bytes([self.kind, self.len]) + self.data
 
         def __len__(self) -> int:
             return self.len
 
         def __str__(self) -> str:
             if self.kind in TcpProtocol.OPTIONS_SINGLE_BYTE_KINDS:
-                return str(self.kind)
+                return f"kind={self.kind}"
             else:
-                return f"{self.kind}{self.length}{self.data if self.data else ''}"
+                return f"kind={self.kind} len={self.len} data=0x{self.data.hex()}"
 
     @dataclass
     class TcpPacket:
@@ -144,7 +150,7 @@ class TcpProtocol:
         def to_bytes(self) -> bytes:
             # Pack ports, seq, and ack number
             src_dest_seq_ack_bytes = struct.pack(
-                "=HHII",
+                ">HHII",
                 self.src_port,
                 self.dest_port,
                 self.seq_number,
@@ -164,25 +170,28 @@ class TcpProtocol:
 
             # Pack all of the above into 16 bits
             flags_data_offset = struct.pack(
-                "=BB",
+                ">BB",
                 data_offset_padded,
                 flags_bitmask,
             )
-            
+
             # Pack some remaining variables
             window_checksum_urg = struct.pack(
-                "=HHH",
+                ">HHH",
                 self.recv_window,
                 self.checksum,
                 self.urgent_pointer,
             )
 
             # Pack options bytes up
-            options_bytes = [ o.to_bytes() for o in self.options ]
+            options_bytes = [o.to_bytes() for o in self.options]
 
             # Calc padding needed to ensure options are padded to the nearest 4-byte word
-            length_of_options = sum(len(o) for o in options_bytes)
-            options_padding = bytes(4 - (length_of_options % 4))
+            length_of_options_bytes = sum(len(o) for o in options_bytes)
+
+            # Get the nearest number of 4-byte words needed to hold all options
+            options_space_bytes = -4 * (length_of_options_bytes // -4)
+            options_padding = bytes(options_space_bytes - length_of_options_bytes)
 
             # Construct header with all packed bits, including options and options padding
             header = src_dest_seq_ack_bytes + flags_data_offset + window_checksum_urg
@@ -194,25 +203,33 @@ class TcpProtocol:
             return header + self.data
 
         def __str__(self) -> str:
-            def str_list(l):
-                return [ f"{str_list(e)}" if isinstance(e, list) else str(e) for e in l ]
+            def str_list(lst):
+                return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
+
             return "|".join(str_list(self.__dict__.values()))
 
     @staticmethod
     def create_packet(
         src_port: int, dest_port: int, flags: TcpFlags, data: bytes = bytes(), options: list[TcpOption] = []
     ) -> TcpPacket:
-        # TODO: Look at why there needs to be a single options.
-        #       Related code in to_bytes() with length_of_options.
-        # There must be at least one option...
-        if options == []:
-            # Add a single terminating option
-            options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)]
+        # Calculate the number of bytes in the header
+        MIN_TCP_HEADER_BYTES = 20
+        length_of_options_bytes = sum(len(o) for o in options)
 
-        # Calculate the number of 32 bit words in the header
-        MIN_TCP_HEADER_WORDS = 5
-        length_of_options_in_bytes = sum(len(o) for o in options)
-        data_offset = MIN_TCP_HEADER_WORDS + ((-4 * (length_of_options_in_bytes // -4)) // 4)
+        if (
+            options != []
+            and length_of_options_bytes % 4 != 0
+            and options[-1].kind != TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST
+        ):
+            raise Exception(
+                "If options do not align to the nearest 4 byte word they must contain an END_OF_OPTION_LIST option!"
+            )
+
+        # Get the nearest number of 4-byte words needed to hold all options
+        options_space_bytes = -4 * (length_of_options_bytes // -4)
+
+        # Get the data offset in 4-byte words
+        data_offset = (MIN_TCP_HEADER_BYTES + options_space_bytes) // 4
 
         # TODO: Calculate checksum using "psudo packet" mentioned in lectures...
 
@@ -246,7 +263,7 @@ class TcpProtocol:
             recv_window,
             checksum,
             urgent_pointer,
-        ) = struct.unpack("=HHIIBBHHH", packet_bytes[:20])
+        ) = struct.unpack(">HHIIBBHHH", packet_bytes[:20])
 
         # Calculate data starting location
         data_offset = data_offset_padded >> 4
@@ -256,10 +273,10 @@ class TcpProtocol:
         flags = TcpProtocol.TcpFlags.from_bitmask(flags_bitmask)
 
         # View calculated options bytes and parse options
-        options_data = packet_bytes[20:data_offset_bytes]
+        options_bytes = packet_bytes[20:data_offset_bytes]
         options: list[TcpProtocol.TcpOption] = []
-        while options_data:
-            option, options_data = TcpProtocol.TcpOption.from_bytes_with_remainder(options_data)
+        while options_bytes:
+            option, options_bytes = TcpProtocol.TcpOption.from_bytes_with_remainder(options_bytes)
             options.append(option)
 
             # Stop parsing options when reached END_OF_OPTION_LIST
@@ -339,7 +356,9 @@ class TcpSocket(Logger):
         self.dest_port = dest_port
 
         # Tell transport layer to initiate handshake procedure on connection
-        self.tcp_conn = self.transport.active_open_tcp_connection(self.bound_src_host, self.bound_src_port, dest_host, dest_port)
+        self.tcp_conn = self.transport.active_open_tcp_connection(
+            self.bound_src_host, self.bound_src_port, dest_host, dest_port
+        )
 
     def bind(self, addr: str) -> None:
         # Unpack addr then update configuration.
@@ -375,7 +394,7 @@ class TransportLayer(Logger):
 
     def create_socket(self) -> TcpSocket:
         return TcpSocket(self)
-    
+
     def active_open_tcp_connection(self, src_host: str, src_port: str, dest_host: str, dest_port: str) -> TcpConnection:
         # Perform three-way handshake to initiate a connection with addr.
         tcp_conn = TcpConnection()
@@ -418,14 +437,15 @@ class TransportLayer(Logger):
         # 1. Wait to receive a SYN packet.
         self.logger.debug("Handshake SYN.")
         while True:
-
             # Wait to receive a packet.
             recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
 
             # Check packet has SYN set.
             if not recv_packet.flags.syn:
-                self.logger.warn(f"Server waiting to accept connections received non-SYN packet: {recv_packet.to_string()}")
-            
+                self.logger.warn(
+                    f"Server waiting to accept connections received non-SYN packet: {recv_packet.to_string()}"
+                )
+
             # Found a valid packet so perform handshake.
             else:
                 break
@@ -435,7 +455,15 @@ class TransportLayer(Logger):
 
         # 2. Create and send a SYNACK packet.
         self.logger.debug("Handshake SYNACK.")
-        syn_ack_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpProtocol.TcpFlags(syn=True, ack=True))
+        syn_ack_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
+
+        mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
+        self.logger.warn(mss_bytes)
+
+        syn_ack_options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
+        syn_ack_packet = TcpProtocol.create_packet(
+            tcp_conn.src_port, tcp_conn.dest_port, syn_ack_flags, options=syn_ack_options
+        )
         self._send_tcp_packet(packet_src_host, tcp_conn, syn_ack_packet)
 
         # 3. Wait to receive a final ACK packet.
@@ -454,7 +482,7 @@ class TransportLayer(Logger):
 
     def _receive_tcp_packet(self, tcp_conn: TcpConnection) -> TcpProtocol.TcpPacket:
         # Ensure connection is in a valid state.
-        assert(tcp_conn.is_handshaking or tcp_conn.has_handshaked)
+        assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
         # Receive the latest packet
         # TODO: Return packet_src_host from ip layer
@@ -464,7 +492,9 @@ class TransportLayer(Logger):
 
         # Check packet is for this connection
         if packet.dest_port != tcp_conn.src_port:
-            raise Exception(f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}")
+            raise Exception(
+                f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
+            )
 
         # Log and return packet
         self.logger.debug("⬆️  [Physical->TCP]")
@@ -473,7 +503,7 @@ class TransportLayer(Logger):
 
     def _send_tcp_packet(self, dest_host: str, tcp_conn: TcpConnection, packet: TcpProtocol.TcpPacket) -> None:
         # Ensure connection is in a valid state.
-        assert(tcp_conn.is_handshaking or tcp_conn.has_handshaked)
+        assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
         # TODO: Use dest_host with ip layer
 
@@ -484,14 +514,13 @@ class TransportLayer(Logger):
 
     def receive(self, tcp_conn: TcpConnection, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
-        assert(tcp_conn.has_handshaked)
+        assert tcp_conn.has_handshaked
 
         # Receive packets if have no ready data.
         if len(tcp_conn.recv_buffer) == 0:
-
             # Receive first incoming packet.
             packet, _ = self._receive_tcp_packet(tcp_conn)
-            
+
             # TODO: Check packet has correct flags.
             # TODO: Handle ACK then PSH.
 
@@ -505,12 +534,14 @@ class TransportLayer(Logger):
 
     def send(self, dest_host: str, tcp_conn: TcpConnection, data: bytes) -> None:
         # Ensure connection is in a valid state.
-        assert(tcp_conn.has_handshaked)
+        assert tcp_conn.has_handshaked
 
         # TODO: Split data up into packets.
 
         # Create single packet with all application data.
-        packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpProtocol.TcpFlags(ack=True), data=data)
+        packet = TcpProtocol.create_packet(
+            tcp_conn.src_port, tcp_conn.dest_port, TcpProtocol.TcpFlags(ack=True), data=data
+        )
 
         # Send single packet.
         self._send_tcp_packet(dest_host, tcp_conn, packet)

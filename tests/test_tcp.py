@@ -28,7 +28,7 @@ def test_tcp_option_to_string():
     tcp_option = TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST)
     tcp_option_string = tcp_option.to_string()
 
-    assert tcp_option_string == "0"
+    assert tcp_option_string == "kind=0"
 
 
 def test_tcp_option_to_bytes():
@@ -76,27 +76,21 @@ def test_tcp_packet_to_bytes():
 
     # Minimal header (without options)
     MINIMAL_HEADER_SIZE_BYTES = 20
-
-    # Single option padded to be 1 full 4-byte (32-bit) word
-    OPTIONS_SIZE_BYTES = 4
-
-    # NB: No data included so size is:
-    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
+    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES
 
     # Read and unpack just the minimal header bytes (without options)
-    header_unpacked = struct.unpack("=HHIIBBHHHI", tcp_packet_bytes)
+    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_packet_bytes)
 
     assert header_unpacked == (
         59999,  # Source Port
         80,  # Destination Port
         0,  # Sequence Number
         0,  # Ack Number
-        6 << 4,  # Data Offset (Right padded by 4)
+        5 << 4,  # Data Offset (Right padded by 4)
         0b00000010,  # Flags (Left padded by 2)
         0,  # Window
         1,  # Checksum
         0,  # Urgent Pointer
-        0,  # Options
     )
 
 
@@ -106,7 +100,7 @@ def test_tcp_packet_to_bytes_with_options():
 
     tcp_options = [
         # Maximum segment size option
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", 65535)),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
@@ -132,7 +126,7 @@ def test_tcp_packet_to_bytes_with_options():
     assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
 
     # Read and unpack just the minimal header bytes (without options)
-    header_unpacked = struct.unpack("=HHIIBBHHH", tcp_packet_bytes[:20])
+    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_packet_bytes[:20])
     assert header_unpacked == (
         59999,  # Source Port
         80,  # Destination Port
@@ -145,7 +139,7 @@ def test_tcp_packet_to_bytes_with_options():
         0,  # Urgent Pointer
     )
 
-    options_unpacked = struct.unpack("=8B", tcp_packet_bytes[20:])
+    options_unpacked = struct.unpack(">8B", tcp_packet_bytes[20:])
     assert options_unpacked == (
         # Max segment size
         2,
@@ -184,7 +178,7 @@ def test_tcp_parse_packet_with_options():
 
     tcp_options = [
         # Maximum segment size option
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", 65535)),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
@@ -209,7 +203,7 @@ def test_tcp_parse_packet_with_options_and_data():
 
     tcp_options = [
         # Maximum segment size option
-        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack("H", 65535)),
+        TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", 65535)),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.NO_OPERATION),
         TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.END_OF_OPTION_LIST),
