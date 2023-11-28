@@ -183,9 +183,10 @@ class ApplicationLayer(Logger):
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform client TCP 3-way-handshake to connect to server at addr = hostname:port
+        # Active open socket and connect to server ip:port = 192.168.0.5:80
         hostname, port = "192.168.0.5", "80"
-        sock.connect(f"{hostname}:{port}")
+        addr = f"{hostname}:{port}"
+        sock.connect(addr)
 
         # Send HEAD request and receive response
         req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
@@ -217,7 +218,7 @@ class ApplicationLayer(Logger):
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform server TCP 3-way-handshake to accept any connections on addr
+        # Passive open socket and accept connections on local ip:port = 192.168.0.5:80
         addr = "192.168.0.5:80"
         sock.bind(addr)
         sock.accept()
