@@ -461,8 +461,6 @@ class TransportLayer(Logger):
         syn_ack_flags = TcpProtocol.TcpFlags(syn=True, ack=True)
 
         mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
-        self.logger.warn(mss_bytes)
-
         syn_ack_options = [TcpProtocol.TcpOption(kind=TcpProtocol.TcpOptionKind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
         syn_ack_packet = TcpProtocol.create_packet(
             tcp_conn.src_port, tcp_conn.dest_port, syn_ack_flags, options=syn_ack_options
