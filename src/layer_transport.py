@@ -419,7 +419,7 @@ class TransportLayer(Logger):
         syn_ack_packet = TcpProtocol.create_packet(conn.src_port, conn.dest_port, TcpProtocol.TcpFlags(syn=True, ack=True))
         self._send_tcp_packet(syn_ack_packet)
 
-        # 3. Wait to receive a FINAL ACK packet.
+        # 3. Wait to receive a final ACK packet.
         self.logger.debug("Handshake ACK.")
         recv_packet = self._receive_tcp_packet()
 
