@@ -1,5 +1,5 @@
 from logger import Logger
-from layer_transport import TransportLayer
+from layer_transport import TcpProtocol, TransportLayer
 from dataclasses import dataclass
 import random
 
@@ -183,9 +183,10 @@ class ApplicationLayer(Logger):
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform client TCP 3-way-handshake to connect to server at addr = hostname:port
+        # Active open socket and connect to server ip:port = 192.168.0.5:80
         hostname, port = "192.168.0.5", "80"
-        sock.connect(f"{hostname}:{port}")
+        addr = f"{hostname}:{port}"
+        sock.connect(addr)
 
         # Send HEAD request and receive response
         req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
@@ -194,7 +195,7 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
-        res_bytes = sock.receive()
+        res_bytes = sock.receive(TcpProtocol.BUFSIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
@@ -207,7 +208,7 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
-        res_bytes = sock.receive()
+        res_bytes = sock.receive(TcpProtocol.BUFSIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
@@ -217,13 +218,13 @@ class ApplicationLayer(Logger):
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform server TCP 3-way-handshake to accept any connections on addr
+        # Passive open socket and accept connections on local ip:port = 192.168.0.5:80
         addr = "192.168.0.5:80"
         sock.bind(addr)
         sock.accept()
 
         # Receive HEAD request and send random 300 response
-        req_bytes = sock.receive()
+        req_bytes = sock.receive(TcpProtocol.BUFSIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
@@ -237,7 +238,7 @@ class ApplicationLayer(Logger):
         sock.send(res.to_bytes())
 
         # Receive GET request and send random 300 response
-        req_bytes = sock.receive()
+        req_bytes = sock.receive(TcpProtocol.BUFSIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")

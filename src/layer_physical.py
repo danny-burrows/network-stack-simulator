@@ -16,7 +16,7 @@ class PhysicalLayer(Logger):
         return PhysicalLayer.PIPE_PATH + str(self.communication_index)
 
     def send(self, data: bytes) -> None:
-        self.logger.debug(f"⌛ Sending {data=}...")
+        self.logger.debug(f"⌛ Sending data=0x{data.hex()}...")
 
         file_owner = False
         try:
@@ -52,6 +52,6 @@ class PhysicalLayer(Logger):
         if file_owner:
             os.remove(self.pipe_path)
 
-        self.logger.debug(f"✅ Received {data=}.")
+        self.logger.debug(f"✅ Received data=0x{data.hex()}")
         self.communication_index += 1
         return data
