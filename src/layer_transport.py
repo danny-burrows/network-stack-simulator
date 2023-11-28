@@ -147,7 +147,7 @@ class TcpProtocol:
             # Data offset must fit into 4 bits
             assert self.data_offset < 2**4
 
-            # Pad right of data offset right 4 / 6 reserved bits
+            # Pad data offset to the right with 4 / 6 reserved bits
             data_offset_padded = self.data_offset << 4
 
             # Left of flags contains last 2 / 6 reserved bits
