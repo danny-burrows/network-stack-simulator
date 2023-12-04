@@ -1,5 +1,6 @@
 from logger import Logger
 from layer_transport import TcpProtocol, TransportLayer
+from layer_network import NetworkLayer
 from dataclasses import dataclass
 import random
 
@@ -217,11 +218,17 @@ class ApplicationLayer(Logger):
         self.transport = TransportLayer()
 
     def execute_client(self) -> None:
+        # Hardcoded source IP for client
+        # SRC host is hardcoded as we have no DNS mechanism
+        # DEST host is hardcoded because NetworkLayer is not implemented
+        NetworkLayer.src_host = "192.168.0.4"
+        NetworkLayer.dest_host = "192.168.0.6"
+
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Active open socket and connect to server ip:port = 192.168.0.5:80
-        hostname, port = "192.168.0.5", "80"
+        # Active open socket and connect to server ip:80
+        hostname, port = NetworkLayer.dest_host, "80"
         addr = f"{hostname}:{port}"
         sock.connect(addr)
 
@@ -252,11 +259,16 @@ class ApplicationLayer(Logger):
         self.exam_logger.info(HttpProtocol.get_exam_string(res))
 
     def execute_server(self) -> None:
+        # Hardcoded source IP for server
+        NetworkLayer.src_host = "192.168.0.6"
+        NetworkLayer.dest_host = "192.168.0.4"
+
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Passive open socket and accept connections on local ip:port = 192.168.0.5:80
-        addr = "192.168.0.5:80"
+        # Passive open socket and accept connections on local ip:80
+        hostname, port = NetworkLayer.src_host, "80"
+        addr = f"{hostname}:{port}"
         sock.bind(addr)
         sock.accept()
 

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import sys
 import random
 import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
 
 from logger import Logger
-from layer_physical import PhysicalLayer
+from layer_network import NetworkLayer
 
 
 @dataclass
@@ -229,7 +230,8 @@ class TcpPacket:
 
 
 class TcpProtocol:
-    """Utility class for creating and parsing TCP packets."""
+    """https://datatracker.ietf.org/doc/html/rfc793
+    Utility class for creating and parsing TCP packets."""
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
@@ -265,9 +267,8 @@ class TcpProtocol:
         # Get the data offset in 4-byte words
         data_offset = (MIN_TCP_HEADER_BYTES + options_space_bytes) // 4
 
-        # TODO: Calculate checksum using "psudo packet" mentioned in lectures...
-
-        packet = TcpPacket(
+        # Put all into final struct and return
+        return TcpPacket(
             src_port=src_port,
             dest_port=dest_port,
             # Initialise SEQ and ACK numbers to 0
@@ -277,12 +278,12 @@ class TcpProtocol:
             # TODO: Need to find better values for the following or justify them being hardcoded...
             flags=flags,
             recv_window=0,
-            checksum=1,
+            # Checksum calculated outside this function using pseudo header
+            checksum=0,
             urgent_pointer=0,
             options=options,
             data=data,
         )
-        return packet
 
     @staticmethod
     def parse_packet(packet_bytes: bytes) -> TcpPacket:
@@ -336,6 +337,49 @@ class TcpProtocol:
         )
 
     @staticmethod
+    def calculate_checksum(packet: TcpPacket, src_host: str, dest_host: str) -> int:
+        # Set checksum to 0 for calculation
+        tmp_checksum = packet.checksum
+        packet.checksum = 0
+
+        # 16-bit one's complement of the one's complement sum of all 16-bit words in the pseudo header + tcp header + text
+        words_to_sum = []
+
+        # --- Pseudo header ---
+        # Split 32-bit src_host + dest_host into 16-bit words
+        src_host_bytes = struct.pack(">I", NetworkLayer.host_to_int(src_host))
+        dest_host_bytes = struct.pack(">I", NetworkLayer.host_to_int(dest_host))
+        words_to_sum.append(src_host_bytes[:2])
+        words_to_sum.append(src_host_bytes[2:])
+        words_to_sum.append(dest_host_bytes[:2])
+        words_to_sum.append(dest_host_bytes[2:])
+
+        # Reserved + Protocol and TCP Length
+        words_to_sum.append(struct.pack(">BB", 0x00, 0x06))
+        words_to_sum.append(struct.pack(">H", len(packet.to_bytes())))
+
+        # --- TCP Packet ---
+        # Split header into 16-bit words and optionally pad to 16-bits
+        packet_bytes = packet.to_bytes()
+        for i in range(0, len(packet_bytes), 2):
+            word = packet_bytes[i : i + 2]
+            word += bytes(2 - len(word))
+            words_to_sum.append(word)
+
+        # --- Perform calculation ---
+        # 1's complement sum all 16-bit words
+        sum = 0
+        for word in words_to_sum:
+            sum += struct.unpack(">H", word)[0]
+
+        # 1's complement the sum and return
+        sum = ~sum & 0xFFFF
+
+        # Restore checksum
+        packet.checksum = tmp_checksum
+        return sum
+
+    @staticmethod
     def get_exam_string(packet: TcpPacket) -> str:
         # TODO
         pass
@@ -376,15 +420,12 @@ class TcpSocket(Logger):
         self.transport = transport
 
     def connect(self, addr: str) -> None:
-        # Hardcode the client IP address
-        src_host = "192.168.1.6"
-
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
         src_port = random.randint(49152, 65535)
 
         # Configure connection with src info.
-        self.bound_src_host = src_host
+        self.bound_src_host = NetworkLayer.src_host
         self.bound_src_port = src_port
 
         # Calculate destination host and port then configure connection.
@@ -424,11 +465,11 @@ class TransportLayer(Logger):
     """Simulated transport layer capable of opening / communicating with
     TcpConnections a between a source host/port (ourselves) and some destination host/port."""
 
-    physical: PhysicalLayer
+    network: NetworkLayer
 
     def __init__(self) -> None:
         super().__init__()
-        self.physical = PhysicalLayer()
+        self.network = NetworkLayer()
 
     def create_socket(self) -> TcpSocket:
         return TcpSocket(self)
@@ -447,7 +488,7 @@ class TransportLayer(Logger):
         )
 
         # 1. Create and send a SYN packet.
-        self.logger.debug("Handshake SYN.")
+        self.logger.info("Handshake SYN...")
         syn_flags = TcpFlags(syn=True)
         mss_bytes = struct.pack(">H", tcp_conn.src_mss)
         syn_options = [
@@ -459,7 +500,7 @@ class TransportLayer(Logger):
         self._send_tcp_packet(dest_host, tcp_conn, syn_packet)
 
         # 2. Wait to receive a SYNACK packet.
-        self.logger.debug("Handshake SYNACK.")
+        self.logger.info("Handshake SYNACK...")
         recv_packet, _packet_src_host = self._receive_tcp_packet(tcp_conn)
 
         # Find SYNACK MSS option and update connection with dest MSS if found.
@@ -478,7 +519,7 @@ class TransportLayer(Logger):
             )
 
         # 3. Send a final response ACK packet.
-        self.logger.debug("Handshake ACK.")
+        self.logger.info("Handshake ACK...")
         ack_packet = TcpProtocol.create_packet(
             tcp_conn.src_port, tcp_conn.dest_port, TcpFlags(ack=True)
         )
@@ -497,7 +538,7 @@ class TransportLayer(Logger):
         self.logger.info(f"Accepting handshake on {tcp_conn.src_port}.")
 
         # 1. Wait to receive a SYN packet.
-        self.logger.debug("Handshake SYN.")
+        self.logger.info("Handshake SYN...")
         while True:
             # Wait to receive a packet.
             recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
@@ -525,7 +566,7 @@ class TransportLayer(Logger):
             self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
 
         # 2. Create and send a SYNACK packet.
-        self.logger.debug("Handshake SYNACK.")
+        self.logger.info("Handshake SYNACK...")
         syn_ack_flags = TcpFlags(syn=True, ack=True)
         mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
         syn_ack_options = [
@@ -540,7 +581,7 @@ class TransportLayer(Logger):
         self._send_tcp_packet(packet_src_host, tcp_conn, syn_ack_packet)
 
         # 3. Wait to receive a final ACK packet.
-        self.logger.debug("Handshake ACK.")
+        self.logger.info("Handshake ACK...")
         recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
 
         # Check recv packet has only ACK flags set.
@@ -560,9 +601,7 @@ class TransportLayer(Logger):
 
         # Receive and parse the latest packet
         # Guaranteed to be fully received due to communicated MSS.
-        # TODO: Return packet_src_host from ip layer
-        packet_data = self.physical.receive()
-        packet_src_host = "192.168.0.5"
+        packet_data, packet_src_host = self.network.receive()
         packet = TcpProtocol.parse_packet(packet_data)
 
         # Check packet is for this connection
@@ -571,8 +610,18 @@ class TransportLayer(Logger):
                 f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
             )
 
+        # Check packet checksum is correct
+        checksum = TcpProtocol.calculate_checksum(
+            packet, packet_src_host, NetworkLayer.src_host
+        )
+
+        if checksum != packet.checksum:
+            raise Exception(
+                f"Server waiting to accept connections received packet with incorrect checksum: {packet.to_string()}"
+            )
+
         # Log and return packet
-        self.logger.debug("⬆️  [Physical->TCP]")
+        self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {packet.to_string()=}")
         return packet, packet_src_host
 
@@ -582,12 +631,16 @@ class TransportLayer(Logger):
         # Ensure connection is in a valid state.
         assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
-        # TODO: Use dest_host with ip layer
+        # Set checksum on the packet using pseudo header info.
+        packet.checksum = TcpProtocol.calculate_checksum(
+            packet, NetworkLayer.src_host, dest_host
+        )
 
         # Log and send packet
+        # TODO: Use dest_host with ip layer
         self.logger.info(f"Sending {packet.to_string()=}...")
-        self.logger.debug("⬇️  [TCP->Physical]")
-        self.physical.send(packet.to_bytes())
+        self.logger.debug("⬇️  [TCP->Network]")
+        self.network.send(packet.to_bytes())
 
     def receive(self, tcp_conn: TcpConnection, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
