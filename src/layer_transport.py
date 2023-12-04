@@ -62,6 +62,9 @@ class TcpFlags:
     def __str__(self) -> str:
         return "".join(str(i) for i in self.to_bitmask_list())
 
+    def __eq__(self, __value: TcpFlags) -> bool:
+        return self.to_bitmask() == __value.to_bitmask()
+
 
 @dataclass
 class TcpOption(Logger):
@@ -457,7 +460,7 @@ class TransportLayer(Logger):
 
         # 2. Wait to receive a SYNACK packet.
         self.logger.debug("Handshake SYNACK.")
-        recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
+        recv_packet, _packet_src_host = self._receive_tcp_packet(tcp_conn)
 
         # Find SYNACK MSS option and update connection with dest MSS if found.
         if mss_option := [
@@ -468,11 +471,10 @@ class TransportLayer(Logger):
             tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
             self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
 
-        # Check recv packet has is SYNACK flags set.
-        # TODO: More error handling? Probably better error handling...
-        if not (recv_packet.flags.syn and recv_packet.flags.ack):
+        # Check recv packet has only SYN, ACK flags set.
+        if not recv_packet.flags == TcpFlags(syn=True, ack=True):
             raise Exception(
-                "Simulation Error: Server responded with unrecognised packet in sequence!"
+                f"Simulation Error: Server responded with non SYNACK packet: {recv_packet.to_string()}"
             )
 
         # 3. Send a final response ACK packet.
@@ -501,7 +503,7 @@ class TransportLayer(Logger):
             recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
 
             # Check packet has SYN set.
-            if not recv_packet.flags.syn:
+            if not recv_packet.flags == TcpFlags(syn=True):
                 self.logger.warn(
                     f"Server waiting to accept connections received non-SYN packet: {recv_packet.to_string()}"
                 )
@@ -541,11 +543,10 @@ class TransportLayer(Logger):
         self.logger.debug("Handshake ACK.")
         recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
 
-        # Check recv packet has is ACK flags set.
-        # TODO: More error handling? Probably better error handling...
-        if not recv_packet.flags.ack:
+        # Check recv packet has only ACK flags set.
+        if not recv_packet.flags == TcpFlags(ack=True):
             raise Exception(
-                "Simulation Error: Server responded with unrecognised packet in sequence!"
+                f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}"
             )
 
         # Update connection state
@@ -553,7 +554,7 @@ class TransportLayer(Logger):
         tcp_conn.has_handshaked = True
         return tcp_conn, packet_src_host
 
-    def _receive_tcp_packet(self, tcp_conn: TcpConnection) -> TcpPacket:
+    def _receive_tcp_packet(self, tcp_conn: TcpConnection) -> tuple[TcpPacket, str]:
         # Ensure connection is in a valid state.
         assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
@@ -619,7 +620,7 @@ class TransportLayer(Logger):
         packet = TcpProtocol.create_packet(
             tcp_conn.src_port,
             tcp_conn.dest_port,
-            TcpFlags(ack=True),
+            TcpFlags(psh=True, ack=True),
             data=data,
         )
 
