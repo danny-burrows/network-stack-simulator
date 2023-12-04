@@ -11,6 +11,9 @@ from layer_physical import PhysicalLayer
 
 @dataclass
 class TcpFlags:
+    """Internal of TcpPacket.
+    TCP flags are 6-bits packed into a single byte."""
+
     urg: bool = False
     ack: bool = False
     psh: bool = False
@@ -62,12 +65,16 @@ class TcpFlags:
 
 @dataclass
 class TcpOption(Logger):
+    """Internal of TcpPacket.
+    TCP options are variable length, packed into words."""
+
     class Kind(IntEnum):
         END_OF_OPTION_LIST = 0
         NO_OPERATION = 1
         MAXIMUM_SEGMENT_SIZE = 2
 
     SINGLE_BYTE_KINDS = set((Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION))
+
     ALL_KINDS = set(
         (Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION, Kind.MAXIMUM_SEGMENT_SIZE)
     )
@@ -78,10 +85,13 @@ class TcpOption(Logger):
             option,
             _remaining_bytes,
         ) = TcpOption.from_bytes_with_remainder(option_bytes)
+
         return option
 
     @staticmethod
     def from_bytes_with_remainder(option_bytes: bytes) -> tuple[TcpOption, bytes]:
+        # Extract option kind from front of option_bytes, and return along with the remainder.
+
         # Byte 1: Option kind
         option_kind = option_bytes[0]
 
@@ -135,6 +145,9 @@ class TcpOption(Logger):
 
 @dataclass
 class TcpPacket:
+    """Internal of TcpProtocol.
+    Representation of a TCP packet used by TcpProtocol."""
+
     src_port: int
     dest_port: int
     seq_number: int
@@ -213,6 +226,8 @@ class TcpPacket:
 
 
 class TcpProtocol:
+    """Utility class for creating and parsing TCP packets."""
+
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
     HARDCODED_MSS = 512
@@ -324,6 +339,8 @@ class TcpProtocol:
 
 
 class TcpConnection:
+    """Struct for maintaining state for a TCP connection."""
+
     src_port: str
     dest_port: str
     send_buffer: bytes = bytes()
@@ -334,8 +351,7 @@ class TcpConnection:
 
 class TcpSocket(Logger):
     """Very small mock socket that imitates the real interface
-    used to interact with TCP Streams.
-    """
+    used to interact with TCP Streams."""
 
     @staticmethod
     def _parse_addr(addr: str) -> (str, int):
@@ -400,9 +416,8 @@ class TcpSocket(Logger):
 
 
 class TransportLayer(Logger):
-    """Simulated transport layer capable of handling a single connection
-    between a source host/port (ourselves) and some destination host/port.
-    """
+    """Simulated transport layer capable of opening / communicating with
+    TcpConnections a between a source host/port (ourselves) and some destination host/port."""
 
     physical: PhysicalLayer
 
