@@ -343,6 +343,8 @@ class TcpConnection:
 
     src_port: str
     dest_port: str
+    src_mss: int
+    dest_mss: int
     send_buffer: bytes = bytes()
     recv_buffer: bytes = bytes()
     is_handshaking: bool = False
@@ -435,6 +437,7 @@ class TransportLayer(Logger):
         tcp_conn = TcpConnection()
         tcp_conn.src_port = src_port
         tcp_conn.dest_port = dest_port
+        tcp_conn.src_mss = TcpProtocol.HARDCODED_MSS
         tcp_conn.is_handshaking = True
         self.logger.info(
             f"Initiating handshake on {tcp_conn.src_port}->{tcp_conn.dest_port}."
@@ -443,7 +446,7 @@ class TransportLayer(Logger):
         # 1. Create and send a SYN packet.
         self.logger.debug("Handshake SYN.")
         syn_flags = TcpFlags(syn=True)
-        mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
+        mss_bytes = struct.pack(">H", tcp_conn.src_mss)
         syn_options = [
             TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)
         ]
@@ -455,6 +458,15 @@ class TransportLayer(Logger):
         # 2. Wait to receive a SYNACK packet.
         self.logger.debug("Handshake SYNACK.")
         recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
+
+        # Find SYNACK MSS option and update connection with dest MSS if found.
+        if mss_option := [
+            o
+            for o in recv_packet.options
+            if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE
+        ][0]:
+            tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
+            self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
 
         # Check recv packet has is SYNACK flags set.
         # TODO: More error handling? Probably better error handling...
@@ -501,10 +513,18 @@ class TransportLayer(Logger):
         # Update connection with current connection.
         tcp_conn.dest_port = recv_packet.src_port
 
+        # Find SYN MSS option and update connection with dest MSS if found.
+        if mss_option := [
+            o
+            for o in recv_packet.options
+            if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE
+        ][0]:
+            tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
+            self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
+
         # 2. Create and send a SYNACK packet.
         self.logger.debug("Handshake SYNACK.")
         syn_ack_flags = TcpFlags(syn=True, ack=True)
-
         mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
         syn_ack_options = [
             TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)
@@ -537,7 +557,8 @@ class TransportLayer(Logger):
         # Ensure connection is in a valid state.
         assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
-        # Receive the latest packet
+        # Receive and parse the latest packet
+        # Guaranteed to be fully received due to communicated MSS.
         # TODO: Return packet_src_host from ip layer
         packet_data = self.physical.receive()
         packet_src_host = "192.168.0.5"
@@ -582,7 +603,7 @@ class TransportLayer(Logger):
             # Receive data into the recv_buffer.
             tcp_conn.recv_buffer += packet.data
 
-        # Receive 'bufsize' bytes of application data
+        # Receive 'bufsize' bytes of application data.
         data = tcp_conn.recv_buffer[:bufsize]
         tcp_conn.recv_buffer = tcp_conn.recv_buffer[bufsize:]
         return data
@@ -591,7 +612,8 @@ class TransportLayer(Logger):
         # Ensure connection is in a valid state.
         assert tcp_conn.has_handshaked
 
-        # TODO: Split data up into packets.
+        # TODO: Split data up into packets, adhering to dest MSS.
+        assert len(data) <= tcp_conn.dest_mss
 
         # Create single packet with all application data.
         packet = TcpProtocol.create_packet(
