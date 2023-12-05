@@ -232,6 +232,7 @@ class ApplicationLayer(Logger):
         hostname, port = NetworkLayer.src_host, "80"
         addr = f"{hostname}:{port}"
         sock.bind(addr)
+        sock.listen()
         sock.accept()
 
         # Receive HEAD request and send random 300 response

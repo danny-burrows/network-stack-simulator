@@ -4,6 +4,7 @@ import random
 import struct
 from dataclasses import dataclass, field
 from enum import IntEnum
+from typing import Any
 
 from logger import Logger
 from layer_network import NetworkLayer
@@ -258,14 +259,14 @@ class TcpProtocol:
         return TcpPacket(
             src_port=src_port,
             dest_port=dest_port,
-            # Initialise SEQ and ACK numbers to 0
+            # Initialise SEQ and ACK numbers to 0 to be calculated later.
             seq_number=0,
             ack_number=0,
             data_offset=data_offset,
             # TODO: Need to find better values for the following or justify them being hardcoded...
             flags=flags,
             recv_window=0,
-            # Checksum calculated outside this function using pseudo header
+            # Checksum calculated outside this function using pseudo header.
             checksum=0,
             urgent_pointer=0,
             options=options,
@@ -375,8 +376,21 @@ class TcpProtocol:
         pass
 
 
-class TcpConnection:
+class TransportControlBlock(Logger):
     """Struct for maintaining state for a TCP connection."""
+
+    class State(IntEnum):
+        CLOSED = 0  # TODO: Comment about virtual state
+        LISTEN = 1
+        SYN_SENT = 2
+        SYN_RECEIVED = 3
+        ESTABLISHED = 4
+        FIN_WAIT_1 = 5
+        FIN_WAIT_2 = 6
+        CLOSE_WAIT = 7
+        CLOSING = 8
+        LAST_ACK = 9
+        TIME_WAIT = 10
 
     src_host: str
     src_port: str
@@ -386,8 +400,16 @@ class TcpConnection:
     dest_mss: int
     send_buffer: bytes = bytes()
     recv_buffer: bytes = bytes()
-    is_handshaking: bool = False
-    has_handshaked: bool = False
+    state: State = State.CLOSED
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if __name == "state" and self.logger:
+            self.logger.debug(f"Setting TCB state to {TransportControlBlock.State(__value).name}.")
+
+        super().__setattr__(__name, __value)
 
 
 class TcpSocket(Logger):
@@ -403,46 +425,53 @@ class TcpSocket(Logger):
     transport: TransportLayer
     bound_src_host: str
     bound_src_port: str
-    tcp_conn: TcpConnection
+    tcb: TransportControlBlock
 
     def __init__(self, transport: TransportLayer) -> None:
         super().__init__()
         self.transport = transport
 
     def connect(self, addr: str) -> None:
+        # Configure socket with bound host.
+        self.bound_src_host = NetworkLayer.src_host
+
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
-        src_port = random.randint(49152, 65535)
+        self.bound_src_port = random.randint(49152, 65535)
 
-        # Configure connection with src info.
-        self.bound_src_host = NetworkLayer.src_host
-        self.bound_src_port = src_port
-
-        # Calculate destination host and port then configure connection.
+        # Calculate destination host and port from addr.
         dest_host, dest_port = self._parse_addr(addr)
 
-        # Tell transport layer to initiate handshake procedure on connection
-        self.tcp_conn = self.transport.active_open_tcp_connection(
-            self.bound_src_host, self.bound_src_port, dest_host, dest_port
-        )
+        # Tell transport layer to perform active open procedure.
+        self.tcb = self.transport.active_open_connection(self.bound_src_host, self.bound_src_port, dest_host, dest_port)
 
     def bind(self, addr: str) -> None:
-        # Unpack addr then update configuration.
+        # Passive open procedure prerequisite.
+        # Unpack addr then update socket configuration.
         host, port = self._parse_addr(addr)
         self.bound_src_host = host
         self.bound_src_port = port
 
+    def listen(self) -> None:
+        # Step 1 of passive open procedure.
+        # Create a TCB and set it to the LISTEN state.
+        self.tcb = TransportControlBlock()
+        self.tcb.src_host = self.bound_src_host
+        self.tcb.src_port = self.bound_src_port
+        self.tcb.state = TransportControlBlock.State.LISTEN
+
     def accept(self) -> None:
-        # Tell transport layer to wait for a handshake procedure.
-        self.tcp_conn = self.transport.passive_open_tcp_connection(self.bound_src_host, self.bound_src_port)
+        # Step 2 of passive open procedure.
+        # Tell transport layer to receive packets into the listening TCB.
+        self.transport.passive_open_connection(self.tcb)
 
     def receive(self, bufsize: int) -> bytes:
-        # Receive 'bufsize' bytes of application data
-        return self.transport.receive(self.tcp_conn, bufsize)
+        # Receive 'bufsize' bytes of application data.
+        return self.transport.receive(self.tcb, bufsize)
 
     def send(self, data: bytes) -> None:
         # Send application layer bytes.
-        return self.transport.send(self.tcp_conn, data)
+        return self.transport.send(self.tcb, data)
 
 
 class TransportLayer(Logger):
@@ -458,185 +487,200 @@ class TransportLayer(Logger):
     def create_socket(self) -> TcpSocket:
         return TcpSocket(self)
 
-    def active_open_tcp_connection(self, src_host: str, src_port: str, dest_host: str, dest_port: str) -> TcpConnection:
-        # Perform three-way handshake to initiate a connection with addr.
-        tcp_conn = TcpConnection()
-        tcp_conn.src_host = src_host
-        tcp_conn.src_port = src_port
-        tcp_conn.dest_host = dest_host
-        tcp_conn.dest_port = dest_port
-        tcp_conn.src_mss = TcpProtocol.HARDCODED_MSS
-        tcp_conn.is_handshaking = True
-        self.logger.info(f"Initiating handshake on {tcp_conn.src_port}->{tcp_conn.dest_port}.")
+    def active_open_connection(
+        self, src_host: str, src_port: str, dest_host: str, dest_port: str
+    ) -> TransportControlBlock:
+        # Active open connection using TCP RFC 793 state diagram fig 6:
+        # https://datatracker.ietf.org/doc/html/rfc793#section-3.4
 
-        # 1. Create and send a SYN packet.
-        self.logger.info("Handshake SYN...")
+        # Create a TCB and set it to the fictional CLOSED state for processing.
+        tcb = TransportControlBlock()
+        tcb.src_host = src_host
+        tcb.src_port = src_port
+        tcb.dest_host = dest_host
+        tcb.dest_port = dest_port
+        tcb.src_mss = TcpProtocol.HARDCODED_MSS
+        tcb.state = TransportControlBlock.State.CLOSED
+        self.logger.info(f"Initiating handshake on {tcb.src_port}->{tcb.dest_port}.")
+
+        # ACTIVE 1. Create and send a SYN packet, set TCB state to SYN_SENT.
+        self.logger.info("Sending handshake SYN...")
         syn_flags = TcpFlags(syn=True)
-        mss_bytes = struct.pack(">H", tcp_conn.src_mss)
-        syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
-        syn_packet = TcpProtocol.create_packet(
-            tcp_conn.src_port, tcp_conn.dest_port, flags=syn_flags, options=syn_options
-        )
-        self._send_tcp_packet(tcp_conn, syn_packet)
+        syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", tcb.src_mss))]
+        syn_packet = TcpProtocol.create_packet(tcb.src_port, tcb.dest_port, flags=syn_flags, options=syn_options)
+        self._send_tcp_packet(tcb, syn_packet)
+        tcb.state = TransportControlBlock.State.SYN_SENT
 
-        # 2. Wait to receive a SYNACK packet.
-        self.logger.info("Handshake SYNACK...")
-        recv_packet, _packet_src_host = self._receive_tcp_packet(tcp_conn)
+        # NOTE: Can now either receive SYNACK, client close, or timeout.
+        # We do not handle client calling close or timeout.
 
-        # Find SYNACK MSS option and update connection with dest MSS if found.
-        if mss_option := [o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE][0]:
-            tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
-            self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
+        # ACTIVE 2. Wait to next state transition packet.
+        self.logger.info("Receiving handshake SYN / SYNACK...")
+        recv_packet, _packet_src_host = self._receive_tcp_packet(tcb)
 
-        # Check recv packet has only SYN, ACK flags set.
-        if not recv_packet.flags == TcpFlags(syn=True, ack=True):
-            raise Exception(f"Simulation Error: Server responded with non SYNACK packet: {recv_packet.to_string()}")
+        # If found MSS option in packet update TCB with dest MSS.
+        if mss_option := next((o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
+            tcb.dest_mss = struct.unpack(">H", mss_option.data)[0]
+            self.logger.debug(f"Received dest MSS: {tcb.dest_mss}.")
 
-        # 3. Send a final response ACK packet.
-        self.logger.info("Handshake ACK...")
-        ack_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpFlags(ack=True))
-        self._send_tcp_packet(tcp_conn, ack_packet)
+        # NOTE: Can now either receive SYN or SYN / ACK.
+        # If receiving SYN / ACK, proceed to ACTIVE handshake step 3.
+        # If receiving SYN, proceed to PASSIVE handshake step 3.
 
-        # Update connection state
-        tcp_conn.is_handshaking = False
-        tcp_conn.has_handshaked = True
-        return tcp_conn
+        # If received SYNACK proceed towards ESTABLISHED.
+        if recv_packet.flags == TcpFlags(syn=True, ack=True):
+            self.logger.info("Received handshake SYNACK...")
 
-    def passive_open_tcp_connection(self, src_host: str, src_port: str) -> TcpConnection:
-        # Receiving end of three-way handshake to initiate a connection with any request.
-        tcp_conn = TcpConnection()
-        tcp_conn.src_host = src_host
-        tcp_conn.src_port = src_port
-        tcp_conn.is_handshaking = True
-        self.logger.info(f"Accepting handshake on {tcp_conn.src_port}.")
+            # ACTIVE 3. Send a final response ACK packet, set TCB state to ESTABLISHED.
+            self.logger.info("Sending handshake ACK...")
+            ack_packet = TcpProtocol.create_packet(tcb.src_port, tcb.dest_port, TcpFlags(ack=True))
+            self._send_tcp_packet(tcb, ack_packet)
+            tcb.state = TransportControlBlock.State.ESTABLISHED
 
-        # 1. Wait to receive a SYN packet.
+        # If received SYN proceed towards SYN_RCVD.
+        elif recv_packet.flags == TcpFlags(syn=True):
+            self.logger.info("Received handshake SYN...")
+            tcb.state = TransportControlBlock.State.SYN_RECEIVED
+
+            # PASSIVE 3. Wait to receive a final ACK packet.
+            self.logger.info("Handshake ACK...")
+            recv_packet, packet_src_host = self._receive_tcp_packet(tcb)
+            if not recv_packet.flags == TcpFlags(ack=True):
+                raise Exception(f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}")
+            tcb.state = TransportControlBlock.State.ESTABLISHED
+
+        # Received non SYN / SYNACK packet.
+        else:
+            raise Exception(f"Simulation Error: Server responded with invalid packet: {recv_packet.to_string()}")
+
+        # Return final TCB in established state
+        return tcb
+
+    def passive_open_connection(self, tcb: TransportControlBlock) -> None:
+        # Passive open connection using TCP RFC 793 state diagram fig 6:
+        # https://datatracker.ietf.org/doc/html/rfc793#section-3.4
+
+        # Ensure connection is in LISTEN state.
+        if tcb.state != TransportControlBlock.State.LISTEN:
+            raise Exception(f"Simulation Error: TCB is not in LISTEN state: {tcb.state}")
+
+        # Perform passive open on a connection on bound TCB using the three-way handshake procedure.
+        self.logger.info(f"Accepting handshake on {tcb.src_port}.")
+
+        # PASSIVE 1. Wait to receive first applicable SYN packet.
         self.logger.info("Handshake SYN...")
-        while True:
-            # Wait to receive a packet.
-            recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
+        recv_packet, packet_src_host = self._receive_tcp_packet(tcb)
+        if not recv_packet.flags == TcpFlags(syn=True):
+            raise Exception(f"Simulation Error: Client responded with non SYN packet: {recv_packet.to_string()}")
 
-            # Check packet has SYN set.
-            if not recv_packet.flags == TcpFlags(syn=True):
-                self.logger.warn(
-                    f"Server waiting to accept connections received non-SYN packet: {recv_packet.to_string()}"
-                )
+        # Update TCB with host and port of received packet.
+        tcb.dest_host = packet_src_host
+        tcb.dest_port = recv_packet.src_port
 
-            # Found a valid packet so perform handshake.
-            else:
-                break
+        # If found MSS option in packet update TCB with dest MSS.
+        if mss_option := next((o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
+            tcb.dest_mss = struct.unpack(">H", mss_option.data)[0]
+            self.logger.debug(f"Received dest MSS: {tcb.dest_mss}.")
 
-        # Update connection with current connection.
-        tcp_conn.dest_host = packet_src_host
-        tcp_conn.dest_port = recv_packet.src_port
-
-        # Find SYN MSS option and update connection with dest MSS if found.
-        if mss_option := [o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE][0]:
-            tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
-            self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
-
-        # 2. Create and send a SYNACK packet.
+        # PASSIVE 2. Create and send a SYNACK packet, set TCB state to SYN_RCVD.
         self.logger.info("Handshake SYNACK...")
         syn_ack_flags = TcpFlags(syn=True, ack=True)
-        mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
-        syn_ack_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
-        syn_ack_packet = TcpProtocol.create_packet(
-            tcp_conn.src_port,
-            tcp_conn.dest_port,
-            syn_ack_flags,
-            options=syn_ack_options,
-        )
-        self._send_tcp_packet(tcp_conn, syn_ack_packet)
+        syn_ack_options = [
+            TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TcpProtocol.HARDCODED_MSS))
+        ]
+        syn_ack_packet = TcpProtocol.create_packet(tcb.src_port, tcb.dest_port, syn_ack_flags, options=syn_ack_options)
+        self._send_tcp_packet(tcb, syn_ack_packet)
+        tcb.state = TransportControlBlock.State.SYN_RECEIVED
 
-        # 3. Wait to receive a final ACK packet.
+        # NOTE: We could receive either ACK or client could call close.
+        # We do not handle client calling close.
+
+        # PASSIVE 3. Wait to receive a final ACK packet.
         self.logger.info("Handshake ACK...")
-        recv_packet, packet_src_host = self._receive_tcp_packet(tcp_conn)
-
-        # Check recv packet has only ACK flags set.
+        recv_packet, packet_src_host = self._receive_tcp_packet(tcb)
         if not recv_packet.flags == TcpFlags(ack=True):
             raise Exception(f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}")
+        tcb.state = TransportControlBlock.State.ESTABLISHED
 
-        # Update connection state
-        tcp_conn.is_handshaking = False
-        tcp_conn.has_handshaked = True
-        return tcp_conn
+        # Return final TCB in established state
+        return tcb
 
-    def _receive_tcp_packet(self, tcp_conn: TcpConnection) -> tuple[TcpPacket, str]:
-        # Ensure connection is in a valid state.
-        assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
+    def _receive_tcp_packet(self, tcb: TransportControlBlock) -> tuple[TcpPacket, str]:
+        # Explictly does not check TCB state or SEQ / ACK numbers.
+        # This responsibility is left to the caller.
 
-        # Receive and parse the latest packet
-        # Guaranteed to be fully received due to communicated MSS.
-        packet_data, packet_src_host = self.network.receive()
+        # Receive and parse the latest packet.
+        # Guaranteed to be fully received due if communicated MSS.
+        packet_data, packet_src_host = self.network.receive(tcb.src_host)
         packet = TcpProtocol.parse_packet(packet_data)
+        self.logger.debug("⬆️  [Network->TCP]")
+        self.logger.info(f"Received {packet.to_string()=}")
 
-        # Check packet is for this connection
-        if packet.dest_port != tcp_conn.src_port:
+        # Check packet host and port is for this connection.
+        if packet.dest_port != tcb.src_port:
             raise Exception(
                 f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
             )
 
         # Check packet checksum is correct
-        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcp_conn.src_host)
-
+        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcb.src_host)
         if checksum != packet.checksum:
             raise Exception(
                 f"Server waiting to accept connections received packet with incorrect checksum: {packet.to_string()}"
             )
 
         # Log and return packet
-        self.logger.debug("⬆️  [Network->TCP]")
-        self.logger.info(f"Received {packet.to_string()=}")
         return packet, packet_src_host
 
-    def _send_tcp_packet(self, tcp_conn: TcpConnection, packet: TcpPacket) -> None:
-        # Ensure connection is in a valid state.
-        assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
+    def _send_tcp_packet(self, tcb: TransportControlBlock, packet: TcpPacket) -> None:
+        # Explictly does not check TCB state or SEQ / ACK numbers.
+        # This responsibility is left to the caller.
 
         # Set checksum on the packet using pseudo header info.
-        packet.checksum = TcpProtocol.calculate_checksum(packet, tcp_conn.src_host, tcp_conn.dest_host)
+        packet.checksum = TcpProtocol.calculate_checksum(packet, tcb.src_host, tcb.dest_host)
 
         # Log and send packet
-        # TODO: Use dest_host with ip layer
         self.logger.info(f"Sending {packet.to_string()=}...")
         self.logger.debug("⬇️  [TCP->Network]")
-        self.network.send(packet.to_bytes())
+        self.network.send(tcb.dest_host, packet.to_bytes())
 
-    def receive(self, tcp_conn: TcpConnection, bufsize: int) -> bytes:
+    def receive(self, tcb: TransportControlBlock, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
-        assert tcp_conn.has_handshaked
+        if tcb.state != TransportControlBlock.State.ESTABLISHED:
+            raise Exception(f"Simulation Error: TCB is not in ESTABLISHED state: {tcb.state}")
 
         # Receive packets if have no ready data.
-        if len(tcp_conn.recv_buffer) == 0:
+        if len(tcb.recv_buffer) == 0:
             # Receive first incoming packet.
-            packet, _ = self._receive_tcp_packet(tcp_conn)
+            packet, _ = self._receive_tcp_packet(tcb)
 
             # TODO: Check packet has correct flags.
             # TODO: Handle ACK then PSH.
 
             # Receive data into the recv_buffer.
-            tcp_conn.recv_buffer += packet.data
+            tcb.recv_buffer += packet.data
 
         # Receive 'bufsize' bytes of application data.
-        data = tcp_conn.recv_buffer[:bufsize]
-        tcp_conn.recv_buffer = tcp_conn.recv_buffer[bufsize:]
+        data = tcb.recv_buffer[:bufsize]
+        tcb.recv_buffer = tcb.recv_buffer[bufsize:]
         return data
 
-    def send(self, tcp_conn: TcpConnection, data: bytes) -> None:
+    def send(self, tcb: TransportControlBlock, data: bytes) -> None:
         # Ensure connection is in a valid state.
-        assert tcp_conn.has_handshaked
+        if tcb.state != TransportControlBlock.State.ESTABLISHED:
+            raise Exception(f"Simulation Error: TCB is not in ESTABLISHED state: {tcb.state}")
 
         # Ensure packet is less than dest MSS.
-        if len(data) > tcp_conn.dest_mss:
-            raise Exception(f"Simulation Error: Packet size {len(data)} exceeds dest MSS {tcp_conn.dest_mss}.")
+        if len(data) > tcb.dest_mss:
+            raise Exception(f"Simulation Error: Packet size {len(data)} exceeds dest MSS {tcb.dest_mss}.")
 
         # Create single packet with all application data.
         packet = TcpProtocol.create_packet(
-            tcp_conn.src_port,
-            tcp_conn.dest_port,
+            tcb.src_port,
+            tcb.dest_port,
             TcpFlags(psh=True, ack=True),
             data=data,
         )
 
         # Send single packet.
-        self._send_tcp_packet(tcp_conn, packet)
+        self._send_tcp_packet(tcb, packet)

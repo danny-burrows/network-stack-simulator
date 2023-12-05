@@ -17,13 +17,13 @@ class NetworkLayer(Logger):
         super().__init__()
         self.physical = PhysicalLayer()
 
-    def send(self, data: bytes) -> None:
-        self.logger.debug(f"⌛ Sending data=0x{data.hex()}...")
+    def send(self, dest_host: str, data: bytes) -> None:
+        self.logger.debug(f"⌛ Sending data=0x{data.hex()} from {NetworkLayer.src_host} to host {dest_host}...")
         self.logger.debug("⬇️  [Network->Physical]")
         self.physical.send(data)
 
-    def receive(self) -> tuple[bytes, str]:
+    def receive(self, src_host: str) -> tuple[bytes, str]:
         data = self.physical.receive()
         self.logger.debug("⬆️  [Physical->Network]")
-        self.logger.debug(f"✅ Received data=0x{data.hex()}")
+        self.logger.debug(f"✅ Received data=0x{data.hex()} to host {src_host} from {NetworkLayer.dest_host}")
         return data, NetworkLayer.dest_host
