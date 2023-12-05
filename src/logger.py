@@ -2,15 +2,17 @@ import re
 import os
 import sys
 import logging
+from dotenv import load_dotenv
 
+load_dotenv()
 
-ENABLE_MAIN_LOGGER = os.environ.get("SYS4_ENABLE_MAIN_LOGGER", True)
+ENABLE_MAIN_LOGGER = os.environ.get("SYS4_ENABLE_MAIN_LOGGER", "true") == "true"
 LOG_FILE = os.environ.get("SYS4_LOG_FILE")
 LOG_LEVEL = os.environ.get("SYS4_LOG_LEVEL", "DEBUG").upper()
 LOG_CLASS_FILTER = os.environ.get("SYS4_LOG_CLASS_FILTER")
 LOG_VERBOSE = os.environ.get("SYS4_LOG_VERBOSE", False)
 
-ENABLE_EXAM_LOGGER = os.environ.get("SYS4_ENABLE_EXAM_LOGGER", True)
+ENABLE_EXAM_LOGGER = os.environ.get("SYS4_ENABLE_EXAM_LOGGER", "true") == "true"
 EXAM_LOG_FILE = os.environ.get("SYS4_EXAM_LOG_FILE")
 
 
