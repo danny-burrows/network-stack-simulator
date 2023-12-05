@@ -1,5 +1,3 @@
-import pytest
-
 # from layer_application import HttpProtocol
 
 
@@ -86,8 +84,8 @@ import pytest
 # MESSAGE TYPE: request
 # MESSAGE STRING:
 #   | HEAD / HTTP/1.1
-#   | 
-#   | 
+#   |
+#   |
 # FIELDS:
 #   |- method: HEAD
 #   |- uri: /
@@ -108,7 +106,7 @@ import pytest
 # MESSAGE STRING:
 #   | GET / HTTP/1.1
 #   | host: 127.0.0.1
-#   | 
+#   |
 #   | Hello, World!
 # FIELDS:
 #   |- method: GET
@@ -130,7 +128,7 @@ import pytest
 # MESSAGE STRING:
 #   | HTTP/1.1 302 Found
 #   | date: Mon, 01 Jan 1999 00:00:00 GMT
-#   | 
+#   |
 #   | Some body!
 # FIELDS:
 #   |- version: HTTP/1.1

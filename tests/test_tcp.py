@@ -1,8 +1,3 @@
-import struct
-
-from layer_transport import TcpProtocol, TcpOption, TcpFlags
-
-
 def test():
     pass
 
