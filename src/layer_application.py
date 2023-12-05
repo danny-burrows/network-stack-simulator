@@ -166,7 +166,7 @@ class HttpProtocol:
             (
                 f"------------ Application Layer {note_str} {note_padding}",
                 f"RAW DATA: {message.to_bytes()}",
-                f"PROTOCOL: HTTP",
+                "PROTOCOL: HTTP",
                 f"MESSAGE TYPE: {message_type}",
                 "MESSAGE STRING:",
                 message_string,
@@ -224,6 +224,8 @@ class ApplicationLayer(Logger):
         self.logger.info(f"Received {res.to_string()=}")
         self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVE"))
 
+        sock.close()
+
     def execute_server(self) -> None:
         # Hardcoded source IP for server
         NetworkLayer.src_host = "192.168.0.6"
@@ -266,3 +268,5 @@ class ApplicationLayer(Logger):
         self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SEND"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
+
+        sock.wait_close()

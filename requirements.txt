@@ -1,0 +1,1 @@
+black ruff pytest python-dotenv

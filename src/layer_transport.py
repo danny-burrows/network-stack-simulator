@@ -248,11 +248,11 @@ class TcpProtocol:
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
-    HARDCODED_MSS = 512 
+    HARDCODED_MSS = 512
 
     # The receive window is the amount of data that can be sent before the receiver must ACK.
     # We will use the maximum 16-bit window size of.
-    WINDOW_SIZE = 2 ** 16 - 1 # 16-bit window size
+    WINDOW_SIZE = 2**16 - 1  # 16-bit window size
 
     @staticmethod
     def create_packet(
@@ -420,11 +420,11 @@ class TcpProtocol:
             (
                 f"------------ Transport Layer {note_str} {note_padding}",
                 f"RAW DATA: {packet.to_bytes()}",
-                f"PROTOCOL: TCP",
+                "PROTOCOL: TCP",
                 f"PACKET STRING: {packet.to_string()}",
                 "PACKET FIELDS:",
                 message_fields,
-                f"---------- END Transport Layer ----------",
+                "---------- END Transport Layer ----------",
             )
         )
 
@@ -433,7 +433,7 @@ class TransportControlBlock(Logger):
     """Struct for maintaining state for a TCP connection."""
 
     class State(IntEnum):
-        CLOSED = 0 # CLOSED is a defined but fictional state, however it is useful for the simulation.
+        CLOSED = 0  # CLOSED is a defined but fictional state, however it is useful for the simulation.
         LISTEN = 1
         SYN_SENT = 2
         SYN_RECEIVED = 3
@@ -467,7 +467,6 @@ class TransportControlBlock(Logger):
     rcv_nxt: int = 0
     rcv_wnd: int = 0
     irs: int = 0
-
 
     def __init__(self) -> None:
         super().__init__()
@@ -539,6 +538,14 @@ class TcpSocket(Logger):
         # Send application layer bytes.
         return self.transport.send(self.tcb, data)
 
+    def close(self) -> None:
+        # Close the connection.
+        self.transport.active_close_connection(self.tcb)
+
+    def wait_close(self) -> None:
+        # Wait for the connection to close.
+        self.transport.passive_close_connection(self.tcb)
+
 
 class TransportLayer(Logger):
     """Simulated transport layer capable of opening / communicating with
@@ -558,7 +565,7 @@ class TransportLayer(Logger):
     ) -> TransportControlBlock:
         # Active open connection using TCP RFC 793 state diagram fig 6:
         # https://datatracker.ietf.org/doc/html/rfc793#section-3.4
-        self.logger.info(f"Initiating handshake on {src_port}->{dest_port}.")
+        self.logger.info(f"Initiating active on {src_port}->{dest_port}, performing handshake.")
 
         # Create a TCB and set it to the fictional CLOSED state.
         tcb = TransportControlBlock()
@@ -584,7 +591,6 @@ class TransportLayer(Logger):
 
         # ACTIVE 1. Create and send a SYN packet, set TCB state to SYN_SENT.
         self.logger.info("Sending handshake SYN...")
-        syn_flags = TcpFlags(syn=True)
         syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", tcb.src_mss))]
         syn_packet = TcpProtocol.create_packet(
             src_port=tcb.src_port,
@@ -592,8 +598,8 @@ class TransportLayer(Logger):
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=syn_flags,
-            options=syn_options
+            flags=TcpFlags(syn=True),
+            options=syn_options,
         )
         tcb.snd_una = syn_packet.seg_seq
         tcb.snd_nxt += syn_packet.seg_len
@@ -601,8 +607,8 @@ class TransportLayer(Logger):
         tcb.state = TransportControlBlock.State.SYN_SENT
 
         # NOTE: Can now either receive SYN, SYNACK, client close, or timeout.
-        # ACTIVE 2. handles receiving SYNACK, proceed to ACTIVE handshake step 3.
-        # We do not handle SYN, normally would proceed to PASSIVE open step 3.
+        # we handle receiving SYNACK, proceed to ACTIVE open step 2.
+        # We do not handle SYN, normally would proceed to SYN_RECEIVED state with simultaneous open.
         # We do not handle client calling close or handle timeout.
 
         # ACTIVE 2. Wait for SYNACK packet.
@@ -616,9 +622,7 @@ class TransportLayer(Logger):
         # In this simulation we will just raise an exception.
         # https://datatracker.ietf.org/doc/html/rfc793#section-3.3
         if not (tcb.snd_una < recv_packet.seg_ack <= tcb.snd_nxt):
-            raise Exception(
-                f"Simulation Error: Client responded with invalid ACK number: {recv_packet.to_string()}"
-            )
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {recv_packet.to_string()}")
 
         # Update sequence numbers.
         tcb.irs = recv_packet.seg_seq
@@ -640,7 +644,7 @@ class TransportLayer(Logger):
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(ack=True)
+            flags=TcpFlags(ack=True),
         )
         tcb.snd_una = ack_packet.seg_seq
         tcb.snd_nxt += ack_packet.seg_len
@@ -659,7 +663,7 @@ class TransportLayer(Logger):
             raise Exception(f"Simulation Error: TCB is not in LISTEN state: {tcb.state}")
 
         # Perform passive open on a connection on bound TCB using the three-way handshake procedure.
-        self.logger.info(f"Accepting handshake on {tcb.src_port}.")
+        self.logger.info(f"Initiating passive open on {tcb.src_port}, performing handshake.")
 
         # Initialize send sequence variables.
         tcb.iss = random.randint(0, 2**32 - 1)
@@ -698,16 +702,17 @@ class TransportLayer(Logger):
 
         # PASSIVE 2. Create and send a SYNACK packet, set TCB state to SYN_RCVD.
         self.logger.info("Handshake SYNACK...")
-        syn_ack_flags = TcpFlags(syn=True, ack=True)
-        syn_ack_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TcpProtocol.HARDCODED_MSS))]
+        syn_ack_options = [
+            TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TcpProtocol.HARDCODED_MSS))
+        ]
         syn_ack_packet = TcpProtocol.create_packet(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=syn_ack_flags,
-            options=syn_ack_options
+            flags=TcpFlags(syn=True, ack=True),
+            options=syn_ack_options,
         )
         tcb.snd_una = syn_ack_packet.seg_seq
         tcb.snd_nxt += syn_ack_packet.seg_len
@@ -729,9 +734,7 @@ class TransportLayer(Logger):
         # In this simulation we will just raise an exception.
         # https://datatracker.ietf.org/doc/html/rfc793#section-3.3
         if not (tcb.snd_una < recv_packet.seg_ack <= tcb.snd_nxt):
-            raise Exception(
-                f"Simulation Error: Client responded with invalid ACK number: {recv_packet.to_string()}"
-            )
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {recv_packet.to_string()}")
 
         # Update sequence numbers.
         tcb.rcv_nxt = recv_packet.seg_seq + recv_packet.seg_len
@@ -743,6 +746,164 @@ class TransportLayer(Logger):
         tcb.state = TransportControlBlock.State.ESTABLISHED
         return tcb
 
+    def active_close_connection(self, tcb: TransportControlBlock) -> None:
+        # Ensure connection is in ESTABLISHED state.
+        if tcb.state != TransportControlBlock.State.ESTABLISHED:
+            raise Exception(f"Simulation Error: TCB is not in ESTABLISHED state: {tcb.state}")
+
+        # Received application close, perform active close procedure.
+        self.logger.info("Initiating active close.")
+
+        # ACTIVE 1. Send FIN, Enter FIN_WAIT_1.
+        self.logger.info("Sending FIN...")
+        fin_packet = TcpProtocol.create_packet(
+            src_port=tcb.src_port,
+            dest_port=tcb.dest_port,
+            seq_number=tcb.snd_nxt,
+            ack_number=tcb.rcv_nxt,
+            window=tcb.rcv_wnd,
+            flags=TcpFlags(fin=True),
+        )
+        tcb.snd_una = fin_packet.seg_seq
+        tcb.snd_nxt += fin_packet.seg_len
+        self._send_tcp_packet(tcb, fin_packet)
+        tcb.state = TransportControlBlock.State.FIN_WAIT_1
+
+        # NOTE: Can now either receive FIN, FINACK, ACK, or timeout.
+        # We handle receiving ACK, proceed to FIN_WAIT_2 in ACTIVE 2.
+        # We do not handle receiving FINACK, normally send ACK and proceed to TIME_WAIT.
+        # We do not handle FIN, normally would proceed to CLOSING with simultaneous close.
+        # We do not handle timeout.
+
+        # ACTIVE 2. Wait for ACK packet, wait for FIN, send ACK, proceed to TIME_WAIT.
+        self.logger.info("Receiving ACK...")
+        ack_packet, _ = self._receive_tcp_packet(tcb)
+        if ack_packet.flags != TcpFlags(ack=True):
+            raise Exception(f"Simulation Error: Received packet with invalid flags: {ack_packet.to_string()}")
+
+        # Check they sent an acceptable ACK for the current communication.
+        if not (tcb.snd_una < ack_packet.seg_ack <= tcb.snd_nxt):
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {ack_packet.to_string()}")
+
+        # Update sequence numbers.
+        tcb.rcv_nxt = ack_packet.seg_seq + ack_packet.seg_len
+        tcb.snd_wnd = ack_packet.window
+        tcb.snd_wl1 = ack_packet.seg_seq
+        tcb.snd_wl2 = ack_packet.seg_ack
+
+        # Receive FIN.
+        self.logger.info("Receiving FIN...")
+        fin_packet, _ = self._receive_tcp_packet(tcb)
+        if fin_packet.flags != TcpFlags(fin=True):
+            raise Exception(f"Simulation Error: Received packet with invalid flags: {fin_packet.to_string()}")
+
+        # Check they sent an acceptable ACK for the current communication.
+        if not (tcb.snd_una < fin_packet.seg_ack <= tcb.snd_nxt):
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {fin_packet.to_string()}")
+
+        # Update sequence numbers.
+        tcb.rcv_nxt = fin_packet.seg_seq + fin_packet.seg_len
+        tcb.snd_wnd = fin_packet.window
+        tcb.snd_wl1 = fin_packet.seg_seq
+        tcb.snd_wl2 = fin_packet.seg_ack
+
+        # Send ACK.
+        self.logger.info("Sending ACK...")
+        ack_packet = TcpProtocol.create_packet(
+            src_port=tcb.src_port,
+            dest_port=tcb.dest_port,
+            seq_number=tcb.snd_nxt,
+            ack_number=tcb.rcv_nxt,
+            window=tcb.rcv_wnd,
+            flags=TcpFlags(ack=True),
+        )
+        tcb.snd_una = ack_packet.seg_seq
+        tcb.snd_nxt += ack_packet.seg_len
+        self._send_tcp_packet(tcb, ack_packet)
+        tcb.state = TransportControlBlock.State.TIME_WAIT
+
+        # ACTIVE 3. Wait for 2MSL timeout, Enter CLOSED.
+        self.logger.info("Waiting for 2MSL timeout...")
+        # time.sleep(2 * 60) # Not waiting for timeout in simulation.
+        tcb.state = TransportControlBlock.State.CLOSED
+
+    def passive_close_connection(self, tcb: TransportControlBlock) -> None:
+        # Ensure connection is in ESTABLISHED state.
+        if tcb.state != TransportControlBlock.State.ESTABLISHED:
+            raise Exception(f"Simulation Error: TCB is not in ESTABLISHED state: {tcb.state}")
+
+        # Awaiting active close, perform passive close procedure.
+        self.logger.info("Initiating passive close.")
+
+        # PASSIVE 1. Receive FIN, Send ACK, Enter CLOSE_WAIT.
+        self.logger.info("Receiving FIN...")
+        fin_packet, _ = self._receive_tcp_packet(tcb)
+        if fin_packet.flags != TcpFlags(fin=True):
+            raise Exception(f"Simulation Error: Received packet with invalid flags: {fin_packet.to_string()}")
+
+        # Check they sent an acceptable ACK for the current communication.
+        if not (tcb.snd_una < fin_packet.seg_ack <= tcb.snd_nxt):
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {fin_packet.to_string()}")
+
+        # Update sequence numbers.
+        tcb.rcv_nxt = fin_packet.seg_seq + fin_packet.seg_len
+        tcb.snd_wnd = fin_packet.window
+        tcb.snd_wl1 = fin_packet.seg_seq
+        tcb.snd_wl2 = fin_packet.seg_ack
+
+        # Send ACK.
+        self.logger.info("Sending ACK...")
+        ack_packet = TcpProtocol.create_packet(
+            src_port=tcb.src_port,
+            dest_port=tcb.dest_port,
+            seq_number=tcb.snd_nxt,
+            ack_number=tcb.rcv_nxt,
+            window=tcb.rcv_wnd,
+            flags=TcpFlags(ack=True),
+        )
+        tcb.snd_una = ack_packet.seg_seq
+        tcb.snd_nxt += ack_packet.seg_len
+        self._send_tcp_packet(tcb, ack_packet)
+        tcb.state = TransportControlBlock.State.CLOSE_WAIT
+
+        # PASSIVE 2. Wait for application close, Send FIN, Enter LAST_ACK.
+        self.logger.info("Waiting for application close...")
+        # continue # Not waiting for application close in simulation.
+
+        # Send FIN.
+        self.logger.info("Sending FIN...")
+        fin_packet = TcpProtocol.create_packet(
+            src_port=tcb.src_port,
+            dest_port=tcb.dest_port,
+            seq_number=tcb.snd_nxt,
+            ack_number=tcb.rcv_nxt,
+            window=tcb.rcv_wnd,
+            flags=TcpFlags(fin=True),
+        )
+        tcb.snd_una = fin_packet.seg_seq
+        tcb.snd_nxt += fin_packet.seg_len
+        self._send_tcp_packet(tcb, fin_packet)
+        tcb.state = TransportControlBlock.State.LAST_ACK
+
+        # PASSIVE 3. Receive ACK, send nothing, Enter CLOSED.
+        self.logger.info("Receiving ACK...")
+        ack_packet, _ = self._receive_tcp_packet(tcb)
+        if ack_packet.flags != TcpFlags(ack=True):
+            raise Exception(f"Simulation Error: Received packet with invalid flags: {ack_packet.to_string()}")
+
+        # Check they sent an acceptable ACK for the current communication.
+        if not (tcb.snd_una < ack_packet.seg_ack <= tcb.snd_nxt):
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {ack_packet.to_string()}")
+
+        # Update sequence numbers.
+        tcb.rcv_nxt = ack_packet.seg_seq + ack_packet.seg_len
+        tcb.snd_wnd = ack_packet.window
+        tcb.snd_wl1 = ack_packet.seg_seq
+        tcb.snd_wl2 = ack_packet.seg_ack
+
+        # Close and finish
+        tcb.state = TransportControlBlock.State.CLOSED
+
     def receive(self, tcb: TransportControlBlock, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
         if tcb.state != TransportControlBlock.State.ESTABLISHED:
@@ -750,7 +911,6 @@ class TransportLayer(Logger):
 
         # Receive packets if have no ready data.
         if len(tcb.recv_buffer) == 0:
-
             # Receive first PSHACK packet.
             packet, _ = self._receive_tcp_packet(tcb)
             if packet.flags != TcpFlags(psh=True, ack=True):
@@ -758,9 +918,7 @@ class TransportLayer(Logger):
 
             # Check they sent an acceptable ACK for the current communication.
             if not (tcb.snd_una < packet.seg_ack <= tcb.snd_nxt):
-                raise Exception(
-                    f"Simulation Error: Client responded with invalid ACK number: {packet.to_string()}"
-                )
+                raise Exception(f"Simulation Error: Client responded with invalid ACK number: {packet.to_string()}")
 
             # Update sequence numbers.
             tcb.rcv_nxt = packet.seg_seq + packet.seg_len
@@ -775,7 +933,7 @@ class TransportLayer(Logger):
                 seq_number=tcb.snd_nxt,
                 ack_number=tcb.rcv_nxt,
                 window=tcb.rcv_wnd,
-                flags=TcpFlags(ack=True)
+                flags=TcpFlags(ack=True),
             )
             tcb.snd_una = ack_packet.seg_seq
             tcb.snd_nxt += ack_packet.seg_len
@@ -819,13 +977,11 @@ class TransportLayer(Logger):
         ack_packet, _ = self._receive_tcp_packet(tcb)
         if ack_packet.flags != TcpFlags(ack=True):
             raise Exception(f"Simulation Error: Received packet with invalid flags: {ack_packet.to_string()}")
-        
+
         # Check they sent an acceptable ACK for the current communication.
         if not (tcb.snd_una < ack_packet.seg_ack <= tcb.snd_nxt):
-            raise Exception(
-                f"Simulation Error: Client responded with invalid ACK number: {ack_packet.to_string()}"
-            )
-        
+            raise Exception(f"Simulation Error: Client responded with invalid ACK number: {ack_packet.to_string()}")
+
         # Update sequence numbers.
         tcb.rcv_nxt = ack_packet.seg_seq + ack_packet.seg_len
         tcb.snd_wnd = ack_packet.window
