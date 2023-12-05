@@ -433,7 +433,7 @@ class TransportControlBlock(Logger):
     """Struct for maintaining state for a TCP connection."""
 
     class State(IntEnum):
-        CLOSED = 0  # TODO: Comment about virtual state
+        CLOSED = 0 # CLOSED is a defined but fictional state, however it is useful for the simulation.
         LISTEN = 1
         SYN_SENT = 2
         SYN_RECEIVED = 3
@@ -485,7 +485,6 @@ class TcpSocket(Logger):
 
     @staticmethod
     def _parse_addr(addr: str) -> (str, int):
-        # TODO: Some validation for ip/domain correctness?
         host, port = addr.split(":")
         return host, int(port)
 
@@ -561,7 +560,7 @@ class TransportLayer(Logger):
         # https://datatracker.ietf.org/doc/html/rfc793#section-3.4
         self.logger.info(f"Initiating handshake on {src_port}->{dest_port}.")
 
-        # Create a TCB and set it to the fictional CLOSED state for processing.
+        # Create a TCB and set it to the fictional CLOSED state.
         tcb = TransportControlBlock()
         tcb.src_host = src_host
         tcb.src_port = src_port
@@ -744,47 +743,6 @@ class TransportLayer(Logger):
         tcb.state = TransportControlBlock.State.ESTABLISHED
         return tcb
 
-    def _receive_tcp_packet(self, tcb: TransportControlBlock) -> tuple[TcpPacket, str]:
-        # Explictly does not check TCB state or SEQ / ACK numbers.
-        # This responsibility is left to the caller.
-
-        # Receive and parse the latest packet.
-        # Guaranteed to be fully received due if communicated MSS.
-        packet_data, packet_src_host = self.network.receive(tcb.src_host)
-        packet = TcpProtocol.parse_packet(packet_data)
-        self.logger.debug("⬆️  [Network->TCP]")
-        self.logger.info(f"Received {packet.to_string()=}")
-        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, "RECEIVE"))
-
-        # Check packet host and port is for this connection.
-        if packet.dest_port != tcb.src_port:
-            raise Exception(
-                f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
-            )
-
-        # Check packet checksum is correct
-        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcb.src_host)
-        if checksum != packet.checksum:
-            raise Exception(
-                f"Server waiting to accept connections received packet with incorrect checksum: {packet.to_string()}"
-            )
-
-        # Log and return packet
-        return packet, packet_src_host
-
-    def _send_tcp_packet(self, tcb: TransportControlBlock, packet: TcpPacket) -> None:
-        # Explictly does not check TCB state or SEQ / ACK numbers.
-        # This responsibility is left to the caller.
-
-        # Set checksum on the packet using pseudo header info.
-        packet.checksum = TcpProtocol.calculate_checksum(packet, tcb.src_host, tcb.dest_host)
-
-        # Log and send packet
-        self.logger.info(f"Sending {packet.to_string()=}...")
-        self.network.send(tcb.dest_host, packet.to_bytes())
-        self.logger.debug("⬇️  [TCP->Network]")
-        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, "SEND"))
-
     def receive(self, tcb: TransportControlBlock, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
         if tcb.state != TransportControlBlock.State.ESTABLISHED:
@@ -873,3 +831,44 @@ class TransportLayer(Logger):
         tcb.snd_wnd = ack_packet.window
         tcb.snd_wl1 = ack_packet.seg_seq
         tcb.snd_wl2 = ack_packet.seg_ack
+
+    def _receive_tcp_packet(self, tcb: TransportControlBlock) -> tuple[TcpPacket, str]:
+        # Explictly does not check TCB state or SEQ / ACK numbers.
+        # This responsibility is left to the caller.
+
+        # Receive and parse the latest packet.
+        # Guaranteed to be fully received due if communicated MSS.
+        packet_data, packet_src_host = self.network.receive(tcb.src_host)
+        packet = TcpProtocol.parse_packet(packet_data)
+        self.logger.debug("⬆️  [Network->TCP]")
+        self.logger.info(f"Received {packet.to_string()=}")
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, "RECEIVE"))
+
+        # Check packet host and port is for this connection.
+        if packet.dest_port != tcb.src_port:
+            raise Exception(
+                f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
+            )
+
+        # Check packet checksum is correct
+        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcb.src_host)
+        if checksum != packet.checksum:
+            raise Exception(
+                f"Server waiting to accept connections received packet with incorrect checksum: {packet.to_string()}"
+            )
+
+        # Log and return packet
+        return packet, packet_src_host
+
+    def _send_tcp_packet(self, tcb: TransportControlBlock, packet: TcpPacket) -> None:
+        # Explictly does not check TCB state or SEQ / ACK numbers.
+        # This responsibility is left to the caller.
+
+        # Set checksum on the packet using pseudo header info.
+        packet.checksum = TcpProtocol.calculate_checksum(packet, tcb.src_host, tcb.dest_host)
+
+        # Log and send packet
+        self.logger.info(f"Sending {packet.to_string()=}...")
+        self.network.send(tcb.dest_host, packet.to_bytes())
+        self.logger.debug("⬇️  [TCP->Network]")
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, "SEND"))
