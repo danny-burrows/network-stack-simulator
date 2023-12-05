@@ -87,7 +87,7 @@ def test_tcp_packet_to_bytes():
         5 << 4,  # Data Offset (Right padded by 4)
         0b00000010,  # Flags (Left padded by 2)
         0,  # Window
-        1,  # Checksum
+        0,  # Checksum
         0,  # Urgent Pointer
     )
 
@@ -136,7 +136,7 @@ def test_tcp_packet_to_bytes_with_options():
         7 << 4,  # Data Offset (Right padded by 4)
         0b00010010,  # Flags (Left padded by 2)
         0,  # Window
-        1,  # Checksum
+        0,  # Checksum
         0,  # Urgent Pointer
     )
 

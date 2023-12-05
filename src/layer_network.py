@@ -7,12 +7,7 @@ class NetworkLayer(Logger):
     def host_to_int(host: str) -> int:
         # Split the IP address into its four bytes and concatenate
         bytes = host.split(".")
-        return (
-            (int(bytes[0]) << 24)
-            + (int(bytes[1]) << 16)
-            + (int(bytes[2]) << 8)
-            + int(bytes[3])
-        )
+        return (int(bytes[0]) << 24) + (int(bytes[1]) << 16) + (int(bytes[2]) << 8) + int(bytes[3])
 
     physical: PhysicalLayer
     src_host: str
@@ -27,7 +22,7 @@ class NetworkLayer(Logger):
         self.logger.debug("⬇️  [Network->Physical]")
         self.physical.send(data)
 
-    def receive(self) -> bytes:
+    def receive(self) -> tuple[bytes, str]:
         data = self.physical.receive()
         self.logger.debug("⬆️  [Physical->Network]")
         self.logger.debug(f"✅ Received data=0x{data.hex()}")
