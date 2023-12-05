@@ -55,6 +55,9 @@ class TcpFlags:
     def to_string(self) -> str:
         return self.__str__()
 
+    def to_nice_string(self) -> str:
+        return f"({', '.join(flag_name.upper() for flag_name, flag_value in vars(self).items() if flag_value)})"
+
     def __int__(self) -> int:
         return self.to_bitmask()
 
@@ -134,9 +137,9 @@ class TcpOption(Logger):
 
     def __str__(self) -> str:
         if self.kind in TcpOption.SINGLE_BYTE_KINDS:
-            return f"kind={self.kind}"
+            return f"kind={TcpOption.Kind(self.kind).name}"
         else:
-            return f"kind={self.kind} len={self.len} data=0x{self.data.hex()}"
+            return f"kind={TcpOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
 
 
 @dataclass
@@ -393,9 +396,42 @@ class TcpProtocol:
         return checksum
 
     @staticmethod
-    def get_exam_string(packet: TcpPacket) -> str:
-        # TODO
-        pass
+    def get_exam_string(packet: TcpPacket, init_seq: int, init_ack: int, note: str = "") -> str:
+        print(init_seq)
+        print(init_ack)
+
+
+
+        def parse_value(field_name, value):
+            if field_name == "flags":
+                return f"{value.to_string()} {value.to_nice_string()}"
+            elif field_name == "options" and value:
+                return "".join(f"\n     |- {option.to_string()}" for option in value)
+            elif field_name == "seq_number":
+                return f"{value} (rel={0 if (value == 0 or init_seq == 0) else (value - init_seq)})"
+            elif field_name == "ack_number":
+                return f"{value} (rel={0 if (value == 0 or init_ack == 0) else (value - init_ack)})"
+            elif value is not None:
+                return str(value)
+
+        message_fields = "\n".join(
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(packet).items()
+        )
+
+        note_str = f"({note})" if note else ""
+        note_padding = "-" * (len("-------------") - len(note_str))
+
+        return "\n".join(
+            (
+                f"------------ Transport Layer {note_str} {note_padding}",
+                f"RAW DATA: {packet.to_bytes()}",
+                f"PACKET TYPE: TCP",
+                f"PACKET STRING: {packet.to_string()}",
+                "PACKET FIELDS:",
+                message_fields,
+                f"---------- END Transport Layer ----------",
+            )
+        )
 
 
 class TransportControlBlock(Logger):
@@ -723,6 +759,7 @@ class TransportLayer(Logger):
         packet = TcpProtocol.parse_packet(packet_data)
         self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {packet.to_string()=}")
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, "RECEIVE"))
 
         # Check packet host and port is for this connection.
         if packet.dest_port != tcb.src_port:
@@ -749,8 +786,9 @@ class TransportLayer(Logger):
 
         # Log and send packet
         self.logger.info(f"Sending {packet.to_string()=}...")
-        self.logger.debug("⬇️  [TCP->Network]")
         self.network.send(tcb.dest_host, packet.to_bytes())
+        self.logger.debug("⬇️  [TCP->Network]")
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, "SEND"))
 
     def receive(self, tcb: TransportControlBlock, bufsize: int) -> bytes:
         # Ensure connection is in a valid state.
