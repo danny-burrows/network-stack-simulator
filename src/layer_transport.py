@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import random
 import struct
 from dataclasses import dataclass, field
@@ -46,9 +45,7 @@ class TcpFlags:
 
     def to_bitmask_list(self) -> [int]:
         # Convert to list of flags as bits
-        return [
-            int(v) for v in [self.urg, self.ack, self.psh, self.rst, self.syn, self.fin]
-        ]
+        return [int(v) for v in [self.urg, self.ack, self.psh, self.rst, self.syn, self.fin]]
 
     def to_bitmask(self) -> int:
         # Convert to bitmask for flags
@@ -79,9 +76,7 @@ class TcpOption(Logger):
 
     SINGLE_BYTE_KINDS = set((Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION))
 
-    ALL_KINDS = set(
-        (Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION, Kind.MAXIMUM_SEGMENT_SIZE)
-    )
+    ALL_KINDS = set((Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION, Kind.MAXIMUM_SEGMENT_SIZE))
 
     @staticmethod
     def from_bytes(option_bytes: bytes) -> TcpOption:
@@ -106,9 +101,7 @@ class TcpOption(Logger):
             raise NotImplementedError(f"Unsupported option kind: {option_kind}")
 
         if len(option_bytes) <= 1:
-            raise ValueError(
-                "Option kind requires length field but no length was specified!"
-            )
+            raise ValueError("Option kind requires length field but no length was specified!")
 
         # Byte 2: Length of data
         option_length = option_bytes[1]
@@ -116,9 +109,7 @@ class TcpOption(Logger):
         # Byte 3+: Option data
         option_data = option_bytes[2:option_length]
 
-        return TcpOption(kind=option_kind, data=option_data), option_bytes[
-            option_length:
-        ]
+        return TcpOption(kind=option_kind, data=option_data), option_bytes[option_length:]
 
     kind: Kind
     data: bytes = bytes()
@@ -252,11 +243,7 @@ class TcpProtocol:
         MIN_TCP_HEADER_BYTES = 20
         length_of_options_bytes = sum(len(o) for o in options)
 
-        if (
-            options != []
-            and length_of_options_bytes % 4 != 0
-            and options[-1].kind != TcpOption.Kind.END_OF_OPTION_LIST
-        ):
+        if options != [] and length_of_options_bytes % 4 != 0 and options[-1].kind != TcpOption.Kind.END_OF_OPTION_LIST:
             raise Exception(
                 "If options do not align to the nearest 4 byte word they must contain an END_OF_OPTION_LIST option!"
             )
@@ -446,9 +433,7 @@ class TcpSocket(Logger):
 
     def accept(self) -> None:
         # Tell transport layer to wait for a handshake procedure.
-        self.tcp_conn, packet_src_host = self.transport.passive_open_tcp_connection(
-            self.bound_src_port
-        )
+        self.tcp_conn, packet_src_host = self.transport.passive_open_tcp_connection(self.bound_src_port)
         self.dest_host = packet_src_host
         self.dest_port = self.tcp_conn.dest_port
 
@@ -474,26 +459,20 @@ class TransportLayer(Logger):
     def create_socket(self) -> TcpSocket:
         return TcpSocket(self)
 
-    def active_open_tcp_connection(
-        self, src_host: str, src_port: str, dest_host: str, dest_port: str
-    ) -> TcpConnection:
+    def active_open_tcp_connection(self, src_host: str, src_port: str, dest_host: str, dest_port: str) -> TcpConnection:
         # Perform three-way handshake to initiate a connection with addr.
         tcp_conn = TcpConnection()
         tcp_conn.src_port = src_port
         tcp_conn.dest_port = dest_port
         tcp_conn.src_mss = TcpProtocol.HARDCODED_MSS
         tcp_conn.is_handshaking = True
-        self.logger.info(
-            f"Initiating handshake on {tcp_conn.src_port}->{tcp_conn.dest_port}."
-        )
+        self.logger.info(f"Initiating handshake on {tcp_conn.src_port}->{tcp_conn.dest_port}.")
 
         # 1. Create and send a SYN packet.
         self.logger.info("Handshake SYN...")
         syn_flags = TcpFlags(syn=True)
         mss_bytes = struct.pack(">H", tcp_conn.src_mss)
-        syn_options = [
-            TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)
-        ]
+        syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
         syn_packet = TcpProtocol.create_packet(
             tcp_conn.src_port, tcp_conn.dest_port, flags=syn_flags, options=syn_options
         )
@@ -504,25 +483,17 @@ class TransportLayer(Logger):
         recv_packet, _packet_src_host = self._receive_tcp_packet(tcp_conn)
 
         # Find SYNACK MSS option and update connection with dest MSS if found.
-        if mss_option := [
-            o
-            for o in recv_packet.options
-            if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE
-        ][0]:
+        if mss_option := [o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE][0]:
             tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
             self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
 
         # Check recv packet has only SYN, ACK flags set.
         if not recv_packet.flags == TcpFlags(syn=True, ack=True):
-            raise Exception(
-                f"Simulation Error: Server responded with non SYNACK packet: {recv_packet.to_string()}"
-            )
+            raise Exception(f"Simulation Error: Server responded with non SYNACK packet: {recv_packet.to_string()}")
 
         # 3. Send a final response ACK packet.
         self.logger.info("Handshake ACK...")
-        ack_packet = TcpProtocol.create_packet(
-            tcp_conn.src_port, tcp_conn.dest_port, TcpFlags(ack=True)
-        )
+        ack_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpFlags(ack=True))
         self._send_tcp_packet(dest_host, tcp_conn, ack_packet)
 
         # Update connection state
@@ -557,11 +528,7 @@ class TransportLayer(Logger):
         tcp_conn.dest_port = recv_packet.src_port
 
         # Find SYN MSS option and update connection with dest MSS if found.
-        if mss_option := [
-            o
-            for o in recv_packet.options
-            if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE
-        ][0]:
+        if mss_option := [o for o in recv_packet.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE][0]:
             tcp_conn.dest_mss = struct.unpack(">H", mss_option.data)[0]
             self.logger.debug(f"Received dest MSS: {tcp_conn.dest_mss}.")
 
@@ -569,9 +536,7 @@ class TransportLayer(Logger):
         self.logger.info("Handshake SYNACK...")
         syn_ack_flags = TcpFlags(syn=True, ack=True)
         mss_bytes = struct.pack(">H", TcpProtocol.HARDCODED_MSS)
-        syn_ack_options = [
-            TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)
-        ]
+        syn_ack_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=mss_bytes)]
         syn_ack_packet = TcpProtocol.create_packet(
             tcp_conn.src_port,
             tcp_conn.dest_port,
@@ -586,9 +551,7 @@ class TransportLayer(Logger):
 
         # Check recv packet has only ACK flags set.
         if not recv_packet.flags == TcpFlags(ack=True):
-            raise Exception(
-                f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}"
-            )
+            raise Exception(f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}")
 
         # Update connection state
         tcp_conn.is_handshaking = False
@@ -611,9 +574,7 @@ class TransportLayer(Logger):
             )
 
         # Check packet checksum is correct
-        checksum = TcpProtocol.calculate_checksum(
-            packet, packet_src_host, NetworkLayer.src_host
-        )
+        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, NetworkLayer.src_host)
 
         if checksum != packet.checksum:
             raise Exception(
@@ -625,16 +586,12 @@ class TransportLayer(Logger):
         self.logger.info(f"Received {packet.to_string()=}")
         return packet, packet_src_host
 
-    def _send_tcp_packet(
-        self, dest_host: str, tcp_conn: TcpConnection, packet: TcpPacket
-    ) -> None:
+    def _send_tcp_packet(self, dest_host: str, tcp_conn: TcpConnection, packet: TcpPacket) -> None:
         # Ensure connection is in a valid state.
         assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
         # Set checksum on the packet using pseudo header info.
-        packet.checksum = TcpProtocol.calculate_checksum(
-            packet, NetworkLayer.src_host, dest_host
-        )
+        packet.checksum = TcpProtocol.calculate_checksum(packet, NetworkLayer.src_host, dest_host)
 
         # Log and send packet
         # TODO: Use dest_host with ip layer

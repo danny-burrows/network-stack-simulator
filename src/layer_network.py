@@ -7,12 +7,7 @@ class NetworkLayer(Logger):
     def host_to_int(host: str) -> int:
         # Split the IP address into its four bytes and concatenate
         bytes = host.split(".")
-        return (
-            (int(bytes[0]) << 24)
-            + (int(bytes[1]) << 16)
-            + (int(bytes[2]) << 8)
-            + int(bytes[3])
-        )
+        return (int(bytes[0]) << 24) + (int(bytes[1]) << 16) + (int(bytes[2]) << 8) + int(bytes[3])
 
     physical: PhysicalLayer
     src_host: str

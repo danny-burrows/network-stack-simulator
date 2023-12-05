@@ -60,21 +60,15 @@ class HttpProtocol:
         start, headers, body = HttpProtocol._parse_message(req_bytes)
 
         if len(start) != 3:
-            raise ValueError(
-                f"HTTP Request Parse Error: Invalid start line of length '{len(start)}': {req_bytes}!"
-            )
+            raise ValueError(f"HTTP Request Parse Error: Invalid start line of length '{len(start)}': {req_bytes}!")
 
         (method, uri, version) = start
 
         if method not in HttpProtocol.VALID_METHODS:
-            raise ValueError(
-                f"HTTP Request Parse Error: Unsupported method '{method}': {req_bytes}!"
-            )
+            raise ValueError(f"HTTP Request Parse Error: Unsupported method '{method}': {req_bytes}!")
 
         if version != HttpProtocol.VERSION:
-            raise ValueError(
-                f"HTTP Request Parse Error: Unsupported version '{version}': {req_bytes}!"
-            )
+            raise ValueError(f"HTTP Request Parse Error: Unsupported version '{version}': {req_bytes}!")
 
         return HttpProtocol.HTTPRequestStruct(method, uri, version, headers, body)
 
@@ -83,21 +77,15 @@ class HttpProtocol:
         start, headers, body = HttpProtocol._parse_message(res_bytes)
 
         if len(start) != 3:
-            raise ValueError(
-                f"HTTP Response Parse Error: Invalid start line of length '{len(start)}': {res_bytes}!"
-            )
+            raise ValueError(f"HTTP Response Parse Error: Invalid start line of length '{len(start)}': {res_bytes}!")
 
         version, status_code, status_msg = start
 
         if version != HttpProtocol.VERSION:
-            raise ValueError(
-                f"HTTP Response Parse Error: Unsupported version '{version}': {res_bytes}!"
-            )
+            raise ValueError(f"HTTP Response Parse Error: Unsupported version '{version}': {res_bytes}!")
 
         if status_code not in HttpProtocol.STATUS_PHRASES:
-            raise ValueError(
-                f"HTTP Response Parse Error: Unsupported status code '{status_code}': {res_bytes}!"
-            )
+            raise ValueError(f"HTTP Response Parse Error: Unsupported status code '{status_code}': {res_bytes}!")
 
         if status_msg != HttpProtocol.STATUS_PHRASES[status_code]:
             raise ValueError(
@@ -113,16 +101,12 @@ class HttpProtocol:
         try:
             header, body = msg_str.split(f"{HttpProtocol.CRLF}{HttpProtocol.CRLF}")
         except ValueError as e:
-            raise ValueError(
-                f"HTTP Message Parse Error: Could not split headers / body! ({msg_str})\n{e}"
-            )
+            raise ValueError(f"HTTP Message Parse Error: Could not split headers / body! ({msg_str})\n{e}")
 
         # header_lines contains both start-line and header-lines
         header_lines = header.split(HttpProtocol.CRLF)
         if len(header_lines) < 0:
-            raise ValueError(
-                f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})"
-            )
+            raise ValueError(f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})")
 
         # Spec specifies start-line as request-line or status-line
         start = header_lines.pop(0).split(HttpProtocol.SP)
@@ -132,56 +116,36 @@ class HttpProtocol:
             try:
                 key, value = header_line.split(f":{HttpProtocol.SP}")
             except ValueError as e:
-                raise ValueError(
-                    f"HTTP Message Parse Error: Headers expect 'key: value'! ({msg_str})\n{e}"
-                )
+                raise ValueError(f"HTTP Message Parse Error: Headers expect 'key: value'! ({msg_str})\n{e}")
             headers[key.lower()] = value
 
         return start, headers, body
 
     @staticmethod
-    def create_request(
-        method: str, uri: str, *, headers: dict[str, str], body: str = ""
-    ) -> HTTPRequestStruct:
+    def create_request(method: str, uri: str, *, headers: dict[str, str], body: str = "") -> HTTPRequestStruct:
         method = method.upper()
         for key in headers:
             headers[key] = headers[key].lower()
 
         if method not in HttpProtocol.VALID_METHODS:
-            raise NotImplementedError(
-                f"HTTPRequest initialized with unsupported method '{method}'!"
-            )
+            raise NotImplementedError(f"HTTPRequest initialized with unsupported method '{method}'!")
 
         if method == "HEAD" and body:
-            raise NotImplementedError(
-                f"HTTPRequest method HEAD should not receive {body=}"
-            )
+            raise NotImplementedError(f"HTTPRequest method HEAD should not receive {body=}")
 
-        return HttpProtocol.HTTPRequestStruct(
-            method, uri, HttpProtocol.VERSION, headers, body
-        )
+        return HttpProtocol.HTTPRequestStruct(method, uri, HttpProtocol.VERSION, headers, body)
 
     @staticmethod
-    def create_response(
-        status_code: str, *, headers: dict[str, str] = {}, body=""
-    ) -> HTTPResponseStruct:
+    def create_response(status_code: str, *, headers: dict[str, str] = {}, body="") -> HTTPResponseStruct:
         if status_code not in HttpProtocol.STATUS_PHRASES:
-            raise NotImplementedError(
-                f"HTTPResponse initialized with unsupported status code '{status_code}'!"
-            )
+            raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
 
-        return HttpProtocol.HTTPResponseStruct(
-            HttpProtocol.VERSION, status_code, headers, body
-        )
+        return HttpProtocol.HTTPResponseStruct(HttpProtocol.VERSION, status_code, headers, body)
 
     @staticmethod
     def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct) -> None:
-        message_type = (
-            "request" if type(message) is HttpProtocol.HTTPRequestStruct else "response"
-        )
-        message_string = "\n".join(
-            f"  | {line}" for line in message.to_string().split("\n")
-        )
+        message_type = "request" if type(message) is HttpProtocol.HTTPRequestStruct else "response"
+        message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
         def parse_value(field_name, value):
             if value and field_name == "body":
@@ -192,8 +156,7 @@ class HttpProtocol:
                 return "<None>"
 
         message_fields = "\n".join(
-            f"  |- {field_name}: {parse_value(field_name, value)}"
-            for field_name, value in vars(message).items()
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
         )
 
         return "\n".join(
