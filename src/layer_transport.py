@@ -345,6 +345,9 @@ class TcpProtocol:
         words_to_sum.append(struct.pack(">BB", 0x00, 0x06))
         words_to_sum.append(struct.pack(">H", len(packet.to_bytes())))
 
+        # Ensure pseudo header is 96 bits (12 bytes)
+        assert sum(len(w) for w in words_to_sum) == 96 // 8
+
         # --- TCP Packet ---
         # Split header into 16-bit words and optionally pad to 16-bits
         packet_bytes = packet.to_bytes()
@@ -355,16 +358,16 @@ class TcpProtocol:
 
         # --- Perform calculation ---
         # 1's complement sum all 16-bit words
-        sum = 0
+        checksum = 0
         for word in words_to_sum:
-            sum += struct.unpack(">H", word)[0]
+            checksum += struct.unpack(">H", word)[0]
 
         # 1's complement the sum and return
-        sum = ~sum & 0xFFFF
+        checksum = ~checksum & 0xFFFF
 
         # Restore checksum
         packet.checksum = tmp_checksum
-        return sum
+        return checksum
 
     @staticmethod
     def get_exam_string(packet: TcpPacket) -> str:
@@ -375,7 +378,9 @@ class TcpProtocol:
 class TcpConnection:
     """Struct for maintaining state for a TCP connection."""
 
+    src_host: str
     src_port: str
+    dest_host: str
     dest_port: str
     src_mss: int
     dest_mss: int
@@ -398,8 +403,6 @@ class TcpSocket(Logger):
     transport: TransportLayer
     bound_src_host: str
     bound_src_port: str
-    dest_host: str
-    dest_port: str
     tcp_conn: TcpConnection
 
     def __init__(self, transport: TransportLayer) -> None:
@@ -417,8 +420,6 @@ class TcpSocket(Logger):
 
         # Calculate destination host and port then configure connection.
         dest_host, dest_port = self._parse_addr(addr)
-        self.dest_host = dest_host
-        self.dest_port = dest_port
 
         # Tell transport layer to initiate handshake procedure on connection
         self.tcp_conn = self.transport.active_open_tcp_connection(
@@ -433,9 +434,7 @@ class TcpSocket(Logger):
 
     def accept(self) -> None:
         # Tell transport layer to wait for a handshake procedure.
-        self.tcp_conn, packet_src_host = self.transport.passive_open_tcp_connection(self.bound_src_port)
-        self.dest_host = packet_src_host
-        self.dest_port = self.tcp_conn.dest_port
+        self.tcp_conn = self.transport.passive_open_tcp_connection(self.bound_src_host, self.bound_src_port)
 
     def receive(self, bufsize: int) -> bytes:
         # Receive 'bufsize' bytes of application data
@@ -443,7 +442,7 @@ class TcpSocket(Logger):
 
     def send(self, data: bytes) -> None:
         # Send application layer bytes.
-        return self.transport.send(self.dest_host, self.tcp_conn, data)
+        return self.transport.send(self.tcp_conn, data)
 
 
 class TransportLayer(Logger):
@@ -462,7 +461,9 @@ class TransportLayer(Logger):
     def active_open_tcp_connection(self, src_host: str, src_port: str, dest_host: str, dest_port: str) -> TcpConnection:
         # Perform three-way handshake to initiate a connection with addr.
         tcp_conn = TcpConnection()
+        tcp_conn.src_host = src_host
         tcp_conn.src_port = src_port
+        tcp_conn.dest_host = dest_host
         tcp_conn.dest_port = dest_port
         tcp_conn.src_mss = TcpProtocol.HARDCODED_MSS
         tcp_conn.is_handshaking = True
@@ -476,7 +477,7 @@ class TransportLayer(Logger):
         syn_packet = TcpProtocol.create_packet(
             tcp_conn.src_port, tcp_conn.dest_port, flags=syn_flags, options=syn_options
         )
-        self._send_tcp_packet(dest_host, tcp_conn, syn_packet)
+        self._send_tcp_packet(tcp_conn, syn_packet)
 
         # 2. Wait to receive a SYNACK packet.
         self.logger.info("Handshake SYNACK...")
@@ -494,16 +495,17 @@ class TransportLayer(Logger):
         # 3. Send a final response ACK packet.
         self.logger.info("Handshake ACK...")
         ack_packet = TcpProtocol.create_packet(tcp_conn.src_port, tcp_conn.dest_port, TcpFlags(ack=True))
-        self._send_tcp_packet(dest_host, tcp_conn, ack_packet)
+        self._send_tcp_packet(tcp_conn, ack_packet)
 
         # Update connection state
         tcp_conn.is_handshaking = False
         tcp_conn.has_handshaked = True
         return tcp_conn
 
-    def passive_open_tcp_connection(self, src_port: str) -> tuple[TcpConnection, str]:
+    def passive_open_tcp_connection(self, src_host: str, src_port: str) -> TcpConnection:
         # Receiving end of three-way handshake to initiate a connection with any request.
         tcp_conn = TcpConnection()
+        tcp_conn.src_host = src_host
         tcp_conn.src_port = src_port
         tcp_conn.is_handshaking = True
         self.logger.info(f"Accepting handshake on {tcp_conn.src_port}.")
@@ -525,6 +527,7 @@ class TransportLayer(Logger):
                 break
 
         # Update connection with current connection.
+        tcp_conn.dest_host = packet_src_host
         tcp_conn.dest_port = recv_packet.src_port
 
         # Find SYN MSS option and update connection with dest MSS if found.
@@ -543,7 +546,7 @@ class TransportLayer(Logger):
             syn_ack_flags,
             options=syn_ack_options,
         )
-        self._send_tcp_packet(packet_src_host, tcp_conn, syn_ack_packet)
+        self._send_tcp_packet(tcp_conn, syn_ack_packet)
 
         # 3. Wait to receive a final ACK packet.
         self.logger.info("Handshake ACK...")
@@ -556,7 +559,7 @@ class TransportLayer(Logger):
         # Update connection state
         tcp_conn.is_handshaking = False
         tcp_conn.has_handshaked = True
-        return tcp_conn, packet_src_host
+        return tcp_conn
 
     def _receive_tcp_packet(self, tcp_conn: TcpConnection) -> tuple[TcpPacket, str]:
         # Ensure connection is in a valid state.
@@ -574,7 +577,7 @@ class TransportLayer(Logger):
             )
 
         # Check packet checksum is correct
-        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, NetworkLayer.src_host)
+        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcp_conn.src_host)
 
         if checksum != packet.checksum:
             raise Exception(
@@ -586,12 +589,12 @@ class TransportLayer(Logger):
         self.logger.info(f"Received {packet.to_string()=}")
         return packet, packet_src_host
 
-    def _send_tcp_packet(self, dest_host: str, tcp_conn: TcpConnection, packet: TcpPacket) -> None:
+    def _send_tcp_packet(self, tcp_conn: TcpConnection, packet: TcpPacket) -> None:
         # Ensure connection is in a valid state.
         assert tcp_conn.is_handshaking or tcp_conn.has_handshaked
 
         # Set checksum on the packet using pseudo header info.
-        packet.checksum = TcpProtocol.calculate_checksum(packet, NetworkLayer.src_host, dest_host)
+        packet.checksum = TcpProtocol.calculate_checksum(packet, tcp_conn.src_host, tcp_conn.dest_host)
 
         # Log and send packet
         # TODO: Use dest_host with ip layer
@@ -619,12 +622,13 @@ class TransportLayer(Logger):
         tcp_conn.recv_buffer = tcp_conn.recv_buffer[bufsize:]
         return data
 
-    def send(self, dest_host: str, tcp_conn: TcpConnection, data: bytes) -> None:
+    def send(self, tcp_conn: TcpConnection, data: bytes) -> None:
         # Ensure connection is in a valid state.
         assert tcp_conn.has_handshaked
 
-        # TODO: Split data up into packets, adhering to dest MSS.
-        assert len(data) <= tcp_conn.dest_mss
+        # Ensure packet is less than dest MSS.
+        if len(data) > tcp_conn.dest_mss:
+            raise Exception(f"Simulation Error: Packet size {len(data)} exceeds dest MSS {tcp_conn.dest_mss}.")
 
         # Create single packet with all application data.
         packet = TcpProtocol.create_packet(
@@ -635,4 +639,4 @@ class TransportLayer(Logger):
         )
 
         # Send single packet.
-        self._send_tcp_packet(dest_host, tcp_conn, packet)
+        self._send_tcp_packet(tcp_conn, packet)

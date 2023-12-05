@@ -183,7 +183,6 @@ class ApplicationLayer(Logger):
     def execute_client(self) -> None:
         # Hardcoded source IP for client
         # SRC host is hardcoded as we have no DNS mechanism
-        # DEST host is hardcoded because NetworkLayer is not implemented
         NetworkLayer.src_host = "192.168.0.4"
         NetworkLayer.dest_host = "192.168.0.6"
 
@@ -191,7 +190,7 @@ class ApplicationLayer(Logger):
         sock = self.transport.create_socket()
 
         # Active open socket and connect to server ip:80
-        hostname, port = NetworkLayer.dest_host, "80"
+        hostname, port = "192.168.0.6", "80"
         addr = f"{hostname}:{port}"
         sock.connect(addr)
 

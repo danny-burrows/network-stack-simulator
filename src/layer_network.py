@@ -22,7 +22,7 @@ class NetworkLayer(Logger):
         self.logger.debug("⬇️  [Network->Physical]")
         self.physical.send(data)
 
-    def receive(self) -> bytes:
+    def receive(self) -> tuple[bytes, str]:
         data = self.physical.receive()
         self.logger.debug("⬆️  [Physical->Network]")
         self.logger.debug(f"✅ Received data=0x{data.hex()}")
