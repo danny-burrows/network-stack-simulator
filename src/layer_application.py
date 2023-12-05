@@ -1,5 +1,6 @@
 from logger import Logger
-from layer_transport import TransportLayer
+from layer_transport import TcpProtocol, TransportLayer
+from layer_network import NetworkLayer
 from dataclasses import dataclass
 import random
 
@@ -141,12 +142,8 @@ class HttpProtocol:
 
         return HttpProtocol.HTTPResponseStruct(HttpProtocol.VERSION, status_code, headers, body)
 
-
-class ApplicationLayer(Logger):
-    transport: TransportLayer
-
     @staticmethod
-    def get_exam_string(message: HttpProtocol.HTTPRequestStruct | HttpProtocol.HTTPRequestStruct) -> None:
+    def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct, note: str = "") -> None:
         message_type = "request" if type(message) is HttpProtocol.HTTPRequestStruct else "response"
         message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
@@ -162,90 +159,114 @@ class ApplicationLayer(Logger):
             f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
         )
 
+        note_str = f"({note})" if note else ""
+        note_padding = "-" * (len("-------------") - len(note_str))
+
         return "\n".join(
             (
-                "------------ HTTP Layer ------------",
+                f"------------ Application Layer {note_str} {note_padding}",
                 f"RAW DATA: {message.to_bytes()}",
+                "PROTOCOL: HTTP",
                 f"MESSAGE TYPE: {message_type}",
                 "MESSAGE STRING:",
                 message_string,
                 "FIELDS:",
                 message_fields,
-                "---------- END HTTP Layer ----------",
+                "---------- END Application Layer ----------",
             )
         )
+
+
+class ApplicationLayer(Logger):
+    transport: TransportLayer
 
     def __init__(self) -> None:
         super().__init__()
         self.transport = TransportLayer()
 
     def execute_client(self) -> None:
+        # Hardcoded source IP for client
+        # SRC host is hardcoded as we have no DNS mechanism
+        NetworkLayer.src_host = "192.168.0.4"
+        NetworkLayer.dest_host = "192.168.0.6"
+
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform client TCP 3-way-handshake to connect to server at addr = hostname:port
-        hostname, port = "192.168.0.5", "80"
-        sock.connect(f"{hostname}:{port}")
+        # Active open socket and connect to server ip:80
+        hostname, port = "192.168.0.6", "80"
+        addr = f"{hostname}:{port}"
+        sock.connect(addr)
 
         # Send HEAD request and receive response
         req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SEND"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
-        res_bytes = sock.receive()
+        res_bytes = sock.receive(TcpProtocol.WINDOW_SIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVE"))
 
         # Send GET request and receive response
         req = HttpProtocol.create_request("GET", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SEND"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
-        res_bytes = sock.receive()
+        res_bytes = sock.receive(TcpProtocol.WINDOW_SIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVE"))
+
+        sock.close()
 
     def execute_server(self) -> None:
+        # Hardcoded source IP for server
+        NetworkLayer.src_host = "192.168.0.6"
+        NetworkLayer.dest_host = "192.168.0.4"
+
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
-        # Perform server TCP 3-way-handshake to accept any connections on addr
-        addr = "192.168.0.5:80"
+        # Passive open socket and accept connections on local ip:80
+        hostname, port = NetworkLayer.src_host, "80"
+        addr = f"{hostname}:{port}"
         sock.bind(addr)
+        sock.listen()
         sock.accept()
 
         # Receive HEAD request and send random 300 response
-        req_bytes = sock.receive()
+        req_bytes = sock.receive(TcpProtocol.WINDOW_SIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVE"))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SEND"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
 
         # Receive GET request and send random 300 response
-        req_bytes = sock.receive()
+        req_bytes = sock.receive(TcpProtocol.WINDOW_SIZE)
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(req))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVE"))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(self.get_exam_string(res))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SEND"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
+
+        sock.wait_close()
