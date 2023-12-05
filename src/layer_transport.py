@@ -397,11 +397,6 @@ class TcpProtocol:
 
     @staticmethod
     def get_exam_string(packet: TcpPacket, init_seq: int, init_ack: int, note: str = "") -> str:
-        print(init_seq)
-        print(init_ack)
-
-
-
         def parse_value(field_name, value):
             if field_name == "flags":
                 return f"{value.to_string()} {value.to_nice_string()}"
@@ -425,7 +420,7 @@ class TcpProtocol:
             (
                 f"------------ Transport Layer {note_str} {note_padding}",
                 f"RAW DATA: {packet.to_bytes()}",
-                f"PACKET TYPE: TCP",
+                f"PROTOCOL: TCP",
                 f"PACKET STRING: {packet.to_string()}",
                 "PACKET FIELDS:",
                 message_fields,
