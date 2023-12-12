@@ -63,13 +63,13 @@ def test_tcp_parse_option_with_data():
     assert tcp_option == TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=bytes([0, 255]))
 
 
-def test_tcp_packet_to_bytes():
-    # Create a basic SYN packet
+def test_tcp_segment_to_bytes():
+    # Create a basic SYN segment
     tcp_flags = TcpFlags(syn=True)
 
     source_port = 59999
     destination_port = 80
-    tcp_packet = TcpProtocol.create_packet(
+    tcp_segment = TcpProtocol.create_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -77,14 +77,14 @@ def test_tcp_packet_to_bytes():
         window=0,
         flags=tcp_flags,
     )
-    tcp_packet_bytes = tcp_packet.to_bytes()
+    tcp_segment_bytes = tcp_segment.to_bytes()
 
     # Minimal header (without options)
     MINIMAL_HEADER_SIZE_BYTES = 20
-    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES
+    assert len(tcp_segment_bytes) == MINIMAL_HEADER_SIZE_BYTES
 
     # Read and unpack just the minimal header bytes (without options)
-    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_packet_bytes)
+    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_segment_bytes)
 
     assert header_unpacked == (
         59999,  # Source Port
@@ -99,8 +99,8 @@ def test_tcp_packet_to_bytes():
     )
 
 
-def test_tcp_packet_to_bytes_with_options():
-    # Create a basic SYNACK packet with some options
+def test_tcp_segment_to_bytes_with_options():
+    # Create a basic SYNACK segment with some options
     tcp_flags = TcpFlags(syn=True, ack=True)
 
     tcp_options = [
@@ -116,7 +116,7 @@ def test_tcp_packet_to_bytes_with_options():
 
     source_port = 59999
     destination_port = 80
-    tcp_packet = TcpProtocol.create_packet(
+    tcp_segment = TcpProtocol.create_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -125,7 +125,7 @@ def test_tcp_packet_to_bytes_with_options():
         flags=tcp_flags,
         options=tcp_options,
     )
-    tcp_packet_bytes = tcp_packet.to_bytes()
+    tcp_segment_bytes = tcp_segment.to_bytes()
 
     # Minimal header (without options)
     MINIMAL_HEADER_SIZE_BYTES = 20
@@ -134,10 +134,10 @@ def test_tcp_packet_to_bytes_with_options():
     OPTIONS_SIZE_BYTES = 8
 
     # NB: No data included so size is:
-    assert len(tcp_packet_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
+    assert len(tcp_segment_bytes) == MINIMAL_HEADER_SIZE_BYTES + OPTIONS_SIZE_BYTES
 
     # Read and unpack just the minimal header bytes (without options)
-    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_packet_bytes[:20])
+    header_unpacked = struct.unpack(">HHIIBBHHH", tcp_segment_bytes[:20])
     assert header_unpacked == (
         59999,  # Source Port
         80,  # Destination Port
@@ -150,7 +150,7 @@ def test_tcp_packet_to_bytes_with_options():
         0,  # Urgent Pointer
     )
 
-    options_unpacked = struct.unpack(">8B", tcp_packet_bytes[20:])
+    options_unpacked = struct.unpack(">8B", tcp_segment_bytes[20:])
     assert options_unpacked == (
         # Max segment size
         2,
@@ -167,13 +167,13 @@ def test_tcp_packet_to_bytes_with_options():
     )
 
 
-def test_tcp_parse_packet():
-    # Create a basic SYN packet
+def test_tcp_parse_segment():
+    # Create a basic SYN segment
     tcp_flags = TcpFlags(syn=True)
 
     source_port = 59999
     destination_port = 80
-    tcp_packet = TcpProtocol.create_packet(
+    tcp_segment = TcpProtocol.create_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -181,13 +181,13 @@ def test_tcp_parse_packet():
         window=0,
         flags=tcp_flags,
     )
-    tcp_packet_bytes = tcp_packet.to_bytes()
+    tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet
+    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
 
 
-def test_tcp_parse_packet_with_options():
-    # Create a basic SYNACK packet with some options
+def test_tcp_parse_segment_with_options():
+    # Create a basic SYNACK segment with some options
     tcp_flags = TcpFlags(syn=True, ack=True)
 
     tcp_options = [
@@ -203,7 +203,7 @@ def test_tcp_parse_packet_with_options():
 
     source_port = 59999
     destination_port = 80
-    tcp_packet = TcpProtocol.create_packet(
+    tcp_segment = TcpProtocol.create_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -212,13 +212,13 @@ def test_tcp_parse_packet_with_options():
         flags=tcp_flags,
         options=tcp_options,
     )
-    tcp_packet_bytes = tcp_packet.to_bytes()
+    tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet
+    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
 
 
-def test_tcp_parse_packet_with_options_and_data():
-    # Create a basic SYNACK packet with some options
+def test_tcp_parse_segment_with_options_and_data():
+    # Create a basic SYNACK segment with some options
     tcp_flags = TcpFlags(syn=True, ack=True)
 
     tcp_options = [
@@ -234,7 +234,7 @@ def test_tcp_parse_packet_with_options_and_data():
 
     source_port = 59999
     destination_port = 80
-    tcp_packet = TcpProtocol.create_packet(
+    tcp_segment = TcpProtocol.create_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -244,6 +244,6 @@ def test_tcp_parse_packet_with_options_and_data():
         options=tcp_options,
         data=bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
     )
-    tcp_packet_bytes = tcp_packet.to_bytes()
+    tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_packet(tcp_packet_bytes) == tcp_packet
+    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
