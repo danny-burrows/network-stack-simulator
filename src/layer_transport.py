@@ -7,7 +7,7 @@ from enum import IntEnum
 from typing import Any
 
 from logger import Logger
-from layer_network import NetworkLayer, DNSServer
+from layer_network import IPProtocol, NetworkLayer, DNSServer
 
 
 @dataclass
@@ -366,8 +366,8 @@ class TCPProtocol:
 
         # --- Pseudo header ---
         # Split 32-bit src_ip + dest_ip into 16-bit words
-        src_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(src_ip))
-        dest_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(dest_ip))
+        src_ip_bytes = struct.pack(">I", IPProtocol.ip_to_int(src_ip))
+        dest_ip_bytes = struct.pack(">I", IPProtocol.ip_to_int(dest_ip))
         words_to_sum.append(src_ip_bytes[:2])
         words_to_sum.append(src_ip_bytes[2:])
         words_to_sum.append(dest_ip_bytes[:2])
@@ -497,23 +497,27 @@ class TCPIPSocket(Logger):
         super().__init__()
         self.transport = transport
 
-    @staticmethod
-    def _resolve_ip_from_host(host: str) -> str:
+    def _resolve_ip_from_host(self, host: str) -> str:
         """Resolve an IP address from a host.
         A host could be a hostname in domain notation or an IPv4 address.
         """
         host = host.lstrip("https://").lstrip("http://")
 
+        # Host is local IP address.
+        if host == "localhost" or host == "0.0.0.0":
+            return self.transport.network.local_ip
+
+        # Host is already an IP address.
         if host.count(".") == 3 and all(s.isdigit() for s in host.split(".")):
-            # Host is already an IP address.
             return host
+
+        # Host is a hostname, resolve it.
         else:
-            # Host is a hostname, resolve it.
             return DNSServer.resolve(host)
 
     def connect(self, addr: tuple(str, int)) -> None:
         # Configure socket with bound ip.
-        self.bound_src_ip = NetworkLayer.src_ip
+        self.bound_src_ip = self._resolve_ip_from_host("0.0.0.0")
 
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
@@ -522,16 +526,15 @@ class TCPIPSocket(Logger):
         # Calculate destination ip and port from addr.
         dest_host, dest_port = addr
         dest_ip = self._resolve_ip_from_host(dest_host)
-        self.logger.debug(f"Resolved hostname: {dest_host} to IP: {dest_ip}.")
+        self.logger.debug(f"Resolved hostname '{dest_host}' to IP '{dest_ip}'.")
 
         # Tell transport layer to perform active open procedure.
         self.tcb = self.transport.active_open_connection(self.bound_src_ip, self.bound_src_port, dest_ip, dest_port)
 
     def bind(self, addr: tuple(str, int)) -> None:
         # Passive open procedure prerequisite.
-        # Unpack addr then update socket configuration.
 
-        # Calculate destination ip and port from addr.
+        # Calculate destination ip and port from addr then configure.
         host, port = addr
         ip = self._resolve_ip_from_host(host)
         self.bound_src_ip, self.bound_src_port = (ip, port)
@@ -539,6 +542,7 @@ class TCPIPSocket(Logger):
     def accept(self) -> None:
         # Step 1 and 2 of passive open procedure.
 
+        # Ensure socket is not currently connected.
         if self.tcb and self.tcb.state != TransportControlBlock.State.CLOSED:
             raise Exception(f"Simulation Error: TCB is not in CLOSED state: {self.tcb.state}")
 
