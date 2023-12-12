@@ -6,14 +6,32 @@ import random
 
 
 class HttpProtocol:
-    # https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5
+    # This HTTP simulation is based on the HTTP/1.1 standard.
+    # It uses RFC 2616 throughout to verify actions taken.
+    # RCP 2616: https://datatracker.ietf.org/doc/html/rfc2616
+    # Summary of RFC 2616, used for clarification: https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
 
+    # HTTP Version for this simulation.
     VERSION = "HTTP/1.1"
-    VALID_METHODS = ["HEAD", "GET"]
-    STATUS_PHRASES = {"302": "Found"}
 
+    # A subset of all HTTP/1.1 methods representing those implemented
+    # for this simulation. Used as a check when decoding messages.
+    VALID_METHODS = ["HEAD", "GET"]
+
+    # A subset of all HTTP/1.1 statuses representing those implemented
+    # for this simulatioin. Used to randomly select a response in th
+    # 300's range, for a given request.
+    STATUS_PHRASES = {
+        "300": "Multiple Choices",
+        "301": "Moved Permanently",
+        "302": "Found",
+        "303": "See Other",
+        "304": "Not Modified",
+    }
+
+    # Helper constants used when parsing HTTP Messages.
     SP = " "
-    CRLF = "\n"
+    CRLF = "\n"  # For the sake of simplicity we set CRLF (usually \r\n) to \n.
 
     @dataclass
     class HTTPRequestStruct:
@@ -57,6 +75,10 @@ class HttpProtocol:
 
     @staticmethod
     def parse_request(req_bytes: bytes) -> HTTPRequestStruct:
+        # Requests are parsed according to "Section 5: Request" of RFC 2616
+        # Some steps are taken to ensure correctness of the req_bytes
+        # according to the specification.
+
         start, headers, body = HttpProtocol._parse_message(req_bytes)
 
         if len(start) != 3:
@@ -74,6 +96,10 @@ class HttpProtocol:
 
     @staticmethod
     def parse_response(res_bytes: bytes) -> HTTPResponseStruct:
+        # Responses are parsed according to "Section 6: Response" of RFC 2616
+        # Some steps are taken to ensure correctness of the res_bytes
+        # according to the specification.
+
         start, headers, body = HttpProtocol._parse_message(res_bytes)
 
         if len(start) != 3:
@@ -96,6 +122,9 @@ class HttpProtocol:
 
     @staticmethod
     def _parse_message(msg_bytes: bytes) -> list[list[str], dict[str, str], str]:
+        # RFC 2616 specifies a HTTP message with two possible types: Request/Response.
+        # This function parses the generic funtionality from both.
+
         msg_str = msg_bytes.decode("utf-8")
 
         try:
@@ -108,7 +137,7 @@ class HttpProtocol:
         if len(header_lines) < 0:
             raise ValueError(f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})")
 
-        # Spec specifies start-line as request-line or status-line
+        # RFC 2616 specifies some start-line which can be a request-line or a status-line, hence the naming chosen here.
         start = header_lines.pop(0).split(HttpProtocol.SP)
 
         headers = {}
@@ -131,6 +160,7 @@ class HttpProtocol:
             raise NotImplementedError(f"HTTPRequest initialized with unsupported method '{method}'!")
 
         if method == "HEAD" and body:
+            # According to RFC 2616 HEAD requests should not have a body
             raise NotImplementedError(f"HTTPRequest method HEAD should not receive {body=}")
 
         return HttpProtocol.HTTPRequestStruct(method, uri, HttpProtocol.VERSION, headers, body)
