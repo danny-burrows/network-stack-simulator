@@ -159,12 +159,12 @@ class HttpProtocol:
             f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
         )
 
-        note_str = f"({note})" if note else ""
-        note_padding = "-" * (len("-------------") - len(note_str))
+        note_str = f"({note}) " if note else ""
+        note_padding = "-" * (len("-------------") - len(note_str) - 1)
 
         return "\n".join(
             (
-                f"------------ Application Layer {note_str} {note_padding}",
+                f"------------ Application Layer {note_str}{note_padding}",
                 f"RAW DATA: {message.to_bytes()}",
                 "PROTOCOL: HTTP",
                 f"MESSAGE TYPE: {message_type}",
