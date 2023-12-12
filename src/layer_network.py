@@ -2,7 +2,7 @@ from logger import Logger
 from layer_physical import PhysicalLayer
 
 
-class ResourceRecord:
+class DNSResourceRecord:
     # https://tools.ietf.org/html/rfc1035#section-4.1.3
     # Prefixed all with rr_ to avoid name collisions
     rr_name: str
@@ -21,7 +21,7 @@ class ResourceRecord:
         return len(self.rr_rdata)
 
 
-class ARecord(ResourceRecord):
+class DNSARecord(DNSResourceRecord):
     rr_type: str = "A"
     rr_class: str = "IN"
 
@@ -29,7 +29,7 @@ class ARecord(ResourceRecord):
         super().__init__(rr_name, rr_ttl, rr_rdata)
 
 
-class CNAMERecord(ResourceRecord):
+class DNSCNAMERecord(DNSResourceRecord):
     rr_type: str = "CNAME"
     rr_class: str = "IN"
 
@@ -40,14 +40,14 @@ class CNAMERecord(ResourceRecord):
 class DNSServer:
     _records = set(
         (
-            ARecord("gollum.mordor", 60, "192.168.0.6"),
-            CNAMERecord("www.gollum.mordor", 60, "gollum.mordor"),
-            CNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"),
+            DNSARecord("gollum.mordor", 60, "192.168.0.6"),
+            DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"),
+            DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"),
         )
     )
 
     @staticmethod
-    def _find_record_from_name(name: str) -> ResourceRecord:
+    def _find_record_from_name(name: str) -> DNSResourceRecord:
         for record in DNSServer._records:
             if record.rr_name == name:
                 return record
