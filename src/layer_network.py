@@ -211,6 +211,9 @@ class NetworkLayer(Logger):
         self.interfaces["eth0"].bind(eth0_ip)
 
         # For our simulation we need to communicate the servers IP over to client
+        # TODO: Comment on how this would really happen with DHCP
+        # TODO: There may be a better way to do this in this simulation
+        # TODO: Ensure exam logging is doing what we expect
         # If client then populate DNS server with records
         if client:
             ip = IPProtocol.int_to_ip(struct.unpack(">I", self.interfaces["eth0"].link.receive())[0])
