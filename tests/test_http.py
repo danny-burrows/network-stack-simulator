@@ -81,7 +81,7 @@ def test_get_exam_string_is_correct_for_head_request():
     request = HttpProtocol.create_request("HEAD", "/", headers={})
     actual = HttpProtocol.get_exam_string(request)
     expected = """\
------------- Application Layer ------------
+------------ BEGIN Application Layer Message ------
 RAW DATA: b'HEAD / HTTP/1.1\\n\\n'
 PROTOCOL: HTTP
 MESSAGE TYPE: request
@@ -95,15 +95,15 @@ FIELDS:
   |- version: HTTP/1.1
   |- headers: <None>
   |- body: <None>
----------- END Application Layer ----------"""
+---------- END Application Layer Message ----------"""
     assert actual == expected
 
 
 def test_get_exam_string_is_correct_for_get_request():
     request = HttpProtocol.create_request("GET", "/", headers={"host": "127.0.0.1"}, body="Hello, World!")
-    actual = HttpProtocol.get_exam_string(request)
+    actual = HttpProtocol.get_exam_string(request, note="SENDING")
     expected = """\
------------- Application Layer ------------
+------------ SENDING Application Layer Message ----
 RAW DATA: b'GET / HTTP/1.1\\nhost: 127.0.0.1\\n\\nHello, World!'
 PROTOCOL: HTTP
 MESSAGE TYPE: request
@@ -118,15 +118,15 @@ FIELDS:
   |- version: HTTP/1.1
   |- headers: {'host': '127.0.0.1'}
   |- body: b'Hello, World!'
----------- END Application Layer ----------"""
+---------- END Application Layer Message ----------"""
     assert actual == expected
 
 
 def test_get_exam_string_is_correct_for_response():
     response = HttpProtocol.create_response("302", headers={"date": "Mon, 01 Jan 1999 00:00:00 GMT"}, body="Some body!")
-    actual = HttpProtocol.get_exam_string(response)
+    actual = HttpProtocol.get_exam_string(response, note="RECIEVED")
     expected = """\
------------- Application Layer ------------
+------------ RECIEVED Application Layer Message ---
 RAW DATA: b'HTTP/1.1 302 Found\\ndate: Mon, 01 Jan 1999 00:00:00 GMT\\n\\nSome body!'
 PROTOCOL: HTTP
 MESSAGE TYPE: response
@@ -140,5 +140,5 @@ FIELDS:
   |- status_code: 302
   |- headers: {'date': 'Mon, 01 Jan 1999 00:00:00 GMT'}
   |- body: b'Some body!'
----------- END Application Layer ----------"""
+---------- END Application Layer Message ----------"""
     assert actual == expected
