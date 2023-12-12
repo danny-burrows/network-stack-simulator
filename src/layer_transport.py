@@ -420,18 +420,18 @@ class TcpProtocol:
             f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(packet).items()
         )
 
-        note_str = f"({note})" if note else ""
+        note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str))
 
         return "\n".join(
             (
-                f"------------ Transport Layer {note_str} {note_padding}",
+                f"------------{note_str} Transport Layer Frame {note_padding}",
                 f"RAW DATA: {packet.to_bytes()}",
                 "PROTOCOL: TCP",
                 f"PACKET STRING: {packet.to_string()}",
                 "PACKET FIELDS:",
                 message_fields,
-                "---------- END Transport Layer ----------",
+                "---------- END Transport Layer Frame ----------",
             )
         )
 
@@ -1005,7 +1005,7 @@ class TransportLayer(Logger):
         packet = TcpProtocol.parse_packet(packet_data)
         self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {packet.to_string()=}")
-        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, "RECEIVE"))
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, note="RECEIVED"))
 
         # Check packet host and port is for this connection.
         if packet.dest_port != tcb.src_port:
@@ -1034,4 +1034,4 @@ class TransportLayer(Logger):
         self.logger.info(f"Sending {packet.to_string()=}...")
         self.network.send(tcb.dest_host, packet.to_bytes())
         self.logger.debug("⬇️  [TCP->Network]")
-        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, "SEND"))
+        self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, note="SENDING"))

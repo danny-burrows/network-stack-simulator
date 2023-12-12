@@ -195,12 +195,12 @@ class HttpProtocol:
             f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(message).items()
         )
 
-        note_str = f"({note}) " if note else ""
+        note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str) - 1)
 
         return "\n".join(
             (
-                f"------------ Application Layer {note_str}{note_padding}",
+                f"------------{note_str} Application Layer Message {note_padding}",
                 f"RAW DATA: {message.to_bytes()}",
                 "PROTOCOL: HTTP",
                 f"MESSAGE TYPE: {message_type}",
@@ -208,7 +208,7 @@ class HttpProtocol:
                 message_string,
                 "FIELDS:",
                 message_fields,
-                "---------- END Application Layer ----------",
+                "---------- END Application Layer Message ----------",
             )
         )
 
@@ -237,7 +237,7 @@ class ApplicationLayer(Logger):
         # Send HEAD request and receive response
         req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SEND"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
@@ -245,12 +245,12 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVE"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVED"))
 
         # Send GET request and receive response
         req = HttpProtocol.create_request("GET", "/", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SEND"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(req.to_bytes())
 
@@ -258,7 +258,7 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         res = HttpProtocol.parse_response(res_bytes)
         self.logger.info(f"Received {res.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVE"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVED"))
 
         sock.close()
 
@@ -282,12 +282,12 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVE"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVED"))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SEND"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
 
@@ -296,12 +296,12 @@ class ApplicationLayer(Logger):
         self.logger.debug("⬆️  [TCP->HTTP]")
         req = HttpProtocol.parse_request(req_bytes)
         self.logger.info(f"Received {req.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVE"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(req, note="RECEIVED"))
 
         status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
         res = HttpProtocol.create_response(status)
         self.logger.info(f"Sending {res.to_string()=}")
-        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SEND"))
+        self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
 
