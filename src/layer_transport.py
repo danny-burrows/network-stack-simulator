@@ -262,7 +262,7 @@ class TcpProtocol:
     WINDOW_SIZE = 2**16 - 1  # 16-bit window size
 
     @staticmethod
-    def create_segment(
+    def create_tcp_segment(
         src_port: int,
         dest_port: int,
         seq_number: int,
@@ -306,7 +306,7 @@ class TcpProtocol:
         )
 
     @staticmethod
-    def parse_segment(segment_bytes: bytes) -> TcpSegment:
+    def parse_tcp_segment(segment_bytes: bytes) -> TcpSegment:
         # View first 20 bytes for header and parse variables
         (
             src_port,
@@ -611,7 +611,7 @@ class TransportLayer(Logger):
         # ACTIVE 1. Create and send a SYN segment, set TCB state to SYN_SENT.
         self.logger.info("Sending handshake SYN...")
         syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", tcb.src_mss))]
-        syn_segment = TcpProtocol.create_segment(
+        syn_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -657,7 +657,7 @@ class TransportLayer(Logger):
 
         # ACTIVE 3. Send a final response ACK segment, then set TCB state to ESTABLISHED.
         self.logger.info("Sending handshake ACK...")
-        ack_segment = TcpProtocol.create_segment(
+        ack_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -724,7 +724,7 @@ class TransportLayer(Logger):
         syn_ack_options = [
             TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TcpProtocol.HARDCODED_MSS))
         ]
-        syn_ack_segment = TcpProtocol.create_segment(
+        syn_ack_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -775,7 +775,7 @@ class TransportLayer(Logger):
 
         # ACTIVE 1. Send FIN, Enter FIN_WAIT_1.
         self.logger.info("Sending FIN...")
-        fin_segment = TcpProtocol.create_segment(
+        fin_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -828,7 +828,7 @@ class TransportLayer(Logger):
 
         # Send ACK.
         self.logger.info("Sending ACK...")
-        ack_segment = TcpProtocol.create_segment(
+        ack_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -872,7 +872,7 @@ class TransportLayer(Logger):
 
         # Send ACK.
         self.logger.info("Sending ACK...")
-        ack_segment = TcpProtocol.create_segment(
+        ack_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -891,7 +891,7 @@ class TransportLayer(Logger):
 
         # Send FIN.
         self.logger.info("Sending FIN...")
-        fin_segment = TcpProtocol.create_segment(
+        fin_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -946,7 +946,7 @@ class TransportLayer(Logger):
             tcb.snd_wl2 = segment.seg_ack
 
             # Respond with ACK.
-            ack_segment = TcpProtocol.create_segment(
+            ack_segment = TcpProtocol.create_tcp_segment(
                 src_port=tcb.src_port,
                 dest_port=tcb.dest_port,
                 seq_number=tcb.snd_nxt,
@@ -979,7 +979,7 @@ class TransportLayer(Logger):
 
         # Create single segment with all application data.
         pshack_flags = TcpFlags(psh=True, ack=True)
-        pshack_segment = TcpProtocol.create_segment(
+        pshack_segment = TcpProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -1014,7 +1014,7 @@ class TransportLayer(Logger):
         # Receive and parse the latest segment.
         # Guaranteed to be fully received due if communicated MSS.
         segment_data, segment_src_ip = self.network.receive(tcb.src_ip)
-        segment = TcpProtocol.parse_segment(segment_data)
+        segment = TcpProtocol.parse_tcp_segment(segment_data)
         self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {segment.to_string()=}")
         self.exam_logger.info(TcpProtocol.get_exam_string(segment, tcb.irs, tcb.iss, note="RECEIVED"))

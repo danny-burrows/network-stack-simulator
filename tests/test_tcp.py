@@ -69,7 +69,7 @@ def test_tcp_segment_to_bytes():
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_segment(
+    tcp_segment = TcpProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -116,7 +116,7 @@ def test_tcp_segment_to_bytes_with_options():
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_segment(
+    tcp_segment = TcpProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -173,7 +173,7 @@ def test_tcp_parse_segment():
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_segment(
+    tcp_segment = TcpProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -183,7 +183,7 @@ def test_tcp_parse_segment():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
+    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
 
 
 def test_tcp_parse_segment_with_options():
@@ -203,7 +203,7 @@ def test_tcp_parse_segment_with_options():
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_segment(
+    tcp_segment = TcpProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -214,7 +214,7 @@ def test_tcp_parse_segment_with_options():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
+    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
 
 
 def test_tcp_parse_segment_with_options_and_data():
@@ -234,7 +234,7 @@ def test_tcp_parse_segment_with_options_and_data():
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_segment(
+    tcp_segment = TcpProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -246,4 +246,4 @@ def test_tcp_parse_segment_with_options_and_data():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_segment(tcp_segment_bytes) == tcp_segment
+    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
