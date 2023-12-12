@@ -11,8 +11,8 @@ from layer_network import NetworkLayer, DNSServer
 
 
 @dataclass
-class TcpFlags:
-    """Internal of TcpSegment.
+class TCPFlags:
+    """Internal of TCPSegment.
     TCP flags are 6-bits packed into a single byte."""
 
     urg: bool = False
@@ -23,13 +23,13 @@ class TcpFlags:
     fin: bool = False
 
     @classmethod
-    def from_bytes(cls, flags_bytes: bytes) -> TcpFlags:
+    def from_bytes(cls, flags_bytes: bytes) -> TCPFlags:
         # Unpack packed bytes as unsigned char bitmask then construct
         flags_bitmask = struct.unpack(">B", flags_bytes)[0]
         return cls.from_bitmask(flags_bitmask)
 
     @classmethod
-    def from_bitmask(cls, flags_bitmask: int) -> TcpFlags:
+    def from_bitmask(cls, flags_bitmask: int) -> TCPFlags:
         # Extract first 6 bits into bools and construct
         return cls(
             urg=bool(flags_bitmask & (2**5)),
@@ -64,13 +64,13 @@ class TcpFlags:
     def __str__(self) -> str:
         return "".join(str(i) for i in self.to_bitmask_list())
 
-    def __eq__(self, __value: TcpFlags) -> bool:
+    def __eq__(self, __value: TCPFlags) -> bool:
         return self.to_bitmask() == __value.to_bitmask()
 
 
 @dataclass
-class TcpOption(Logger):
-    """Internal of TcpSegment.
+class TCPOption:
+    """Internal of TCPSegment.
     TCP options are variable length, packed into words."""
 
     class Kind(IntEnum):
@@ -83,25 +83,25 @@ class TcpOption(Logger):
     ALL_KINDS = set((Kind.END_OF_OPTION_LIST, Kind.NO_OPERATION, Kind.MAXIMUM_SEGMENT_SIZE, Kind.WINDOW_SCALING))
 
     @staticmethod
-    def from_bytes(option_bytes: bytes) -> TcpOption:
+    def from_bytes(option_bytes: bytes) -> TCPOption:
         (
             option,
             _remaining_bytes,
-        ) = TcpOption.from_bytes_with_remainder(option_bytes)
+        ) = TCPOption.from_bytes_with_remainder(option_bytes)
 
         return option
 
     @staticmethod
-    def from_bytes_with_remainder(option_bytes: bytes) -> tuple[TcpOption, bytes]:
+    def from_bytes_with_remainder(option_bytes: bytes) -> tuple[TCPOption, bytes]:
         # Extract option kind from front of option_bytes, and return along with the remainder.
 
         # Byte 1: Option kind
         option_kind = option_bytes[0]
 
-        if option_kind in TcpOption.SINGLE_BYTE_KINDS:
-            return TcpOption(kind=option_kind), option_bytes[1:]
+        if option_kind in TCPOption.SINGLE_BYTE_KINDS:
+            return TCPOption(kind=option_kind), option_bytes[1:]
 
-        if option_kind not in TcpOption.ALL_KINDS:
+        if option_kind not in TCPOption.ALL_KINDS:
             raise NotImplementedError(f"Unsupported option kind: {option_kind}")
 
         if len(option_bytes) <= 1:
@@ -113,21 +113,20 @@ class TcpOption(Logger):
         # Byte 3+: Option data
         option_data = option_bytes[2:option_length]
 
-        return TcpOption(kind=option_kind, data=option_data), option_bytes[option_length:]
+        return TCPOption(kind=option_kind, data=option_data), option_bytes[option_length:]
 
     kind: Kind
     data: bytes = bytes()
     len: int = field(init=False)
 
     def __post_init__(self):
-        super().__init__()
-        self.len = 1 if self.kind in TcpOption.SINGLE_BYTE_KINDS else 2 + len(self.data)
+        self.len = 1 if self.kind in TCPOption.SINGLE_BYTE_KINDS else 2 + len(self.data)
 
     def to_string(self) -> str:
         return self.__str__()
 
     def to_bytes(self) -> bytes:
-        if self.kind in TcpOption.SINGLE_BYTE_KINDS:
+        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
             return bytes([self.kind])
         else:
             return bytes([self.kind, self.len]) + self.data
@@ -136,27 +135,27 @@ class TcpOption(Logger):
         return self.len
 
     def __str__(self) -> str:
-        if self.kind in TcpOption.SINGLE_BYTE_KINDS:
-            return f"kind={TcpOption.Kind(self.kind).name}"
+        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
+            return f"kind={TCPOption.Kind(self.kind).name}"
         else:
-            return f"kind={TcpOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
+            return f"kind={TCPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
 
 
 @dataclass
-class TcpSegment:
-    """Internal of TcpProtocol.
-    Representation of a TCP segment used by TcpProtocol."""
+class TCPSegment:
+    """Internal of TCPProtocol.
+    Representation of a TCP segment used by TCPProtocol."""
 
     src_port: int
     dest_port: int
     seq_number: int
     ack_number: int
     data_offset: int
-    flags: TcpFlags
+    flags: TCPFlags
     window: bytes
     checksum: int
     urgent_pointer: bytes
-    options: list[TcpOption]
+    options: list[TCPOption]
     data: bytes
 
     @property
@@ -242,7 +241,7 @@ class TcpSegment:
         return "|".join(str_list(self.__dict__.values()))
 
 
-class TcpProtocol:
+class TCPProtocol:
     """This class represents a TCP simulation based on RFC 793.
 
     The class itself allows for parsing and creating TCP frames or "segments".
@@ -268,16 +267,16 @@ class TcpProtocol:
         seq_number: int,
         ack_number: int,
         window: int,
-        flags: TcpFlags,
+        flags: TCPFlags,
         data: bytes = bytes(),
-        options: list[TcpOption] = [],
-    ) -> TcpSegment:
+        options: list[TCPOption] = [],
+    ) -> TCPSegment:
         # Calculate the number of bytes in the header
         MIN_TCP_HEADER_BYTES = 20
         length_of_options_bytes = sum(len(o) for o in options)
 
         # Check options are valid and align to the nearest 4 byte word.
-        if options != [] and length_of_options_bytes % 4 != 0 and options[-1].kind != TcpOption.Kind.END_OF_OPTION_LIST:
+        if options != [] and length_of_options_bytes % 4 != 0 and options[-1].kind != TCPOption.Kind.END_OF_OPTION_LIST:
             raise Exception(
                 "If options do not align to the nearest 4 byte word they must contain an END_OF_OPTION_LIST option!"
             )
@@ -289,7 +288,7 @@ class TcpProtocol:
         data_offset = (MIN_TCP_HEADER_BYTES + options_space_bytes) // 4
 
         # Put all into final struct and return
-        return TcpSegment(
+        return TCPSegment(
             src_port=src_port,
             dest_port=dest_port,
             seq_number=seq_number,
@@ -306,7 +305,7 @@ class TcpProtocol:
         )
 
     @staticmethod
-    def parse_tcp_segment(segment_bytes: bytes) -> TcpSegment:
+    def parse_tcp_segment(segment_bytes: bytes) -> TCPSegment:
         # View first 20 bytes for header and parse variables
         (
             src_port,
@@ -325,24 +324,24 @@ class TcpProtocol:
         data_offset_bytes = data_offset * 4
 
         # Parse flags bitmask into nice struct
-        flags = TcpFlags.from_bitmask(flags_bitmask)
+        flags = TCPFlags.from_bitmask(flags_bitmask)
 
         # View calculated options bytes and parse options
         options_bytes = segment_bytes[20:data_offset_bytes]
-        options: list[TcpOption] = []
+        options: list[TCPOption] = []
         while options_bytes:
-            option, options_bytes = TcpOption.from_bytes_with_remainder(options_bytes)
+            option, options_bytes = TCPOption.from_bytes_with_remainder(options_bytes)
             options.append(option)
 
             # Stop parsing options when reached END_OF_OPTION_LIST
-            if option.kind == TcpOption.Kind.END_OF_OPTION_LIST:
+            if option.kind == TCPOption.Kind.END_OF_OPTION_LIST:
                 break
 
         # View calculated data bytes
         data = segment_bytes[data_offset_bytes:]
 
         # Put all into final struct and return
-        return TcpSegment(
+        return TCPSegment(
             src_port=src_port,
             dest_port=dest_port,
             seq_number=seq_number,
@@ -357,7 +356,7 @@ class TcpProtocol:
         )
 
     @staticmethod
-    def calculate_checksum(segment: TcpSegment, src_ip: str, dest_ip: str) -> int:
+    def calculate_checksum(segment: TCPSegment, src_ip: str, dest_ip: str) -> int:
         # Set checksum to 0 for calculation
         tmp_checksum = segment.checksum
         segment.checksum = 0
@@ -403,7 +402,7 @@ class TcpProtocol:
         return checksum
 
     @staticmethod
-    def get_exam_string(segment: TcpSegment, init_seq: int, init_ack: int, note: str = "") -> str:
+    def get_exam_string(segment: TCPSegment, init_seq: int, init_ack: int, note: str = "") -> str:
         def parse_value(field_name, value):
             if field_name == "flags":
                 return f"{value.to_string()} {value.to_nice_string()}"
@@ -485,7 +484,7 @@ class TransportControlBlock(Logger):
         super().__setattr__(__name, __value)
 
 
-class TcpIpSocket(Logger):
+class TCPIPSocket(Logger):
     """Very small mock socket that imitates the real interface
     used to interact with the transport layer."""
 
@@ -523,6 +522,7 @@ class TcpIpSocket(Logger):
         # Calculate destination ip and port from addr.
         dest_host, dest_port = addr
         dest_ip = self._resolve_ip_from_host(dest_host)
+        self.logger.debug(f"Resolved hostname: {dest_host} to IP: {dest_ip}.")
 
         # Tell transport layer to perform active open procedure.
         self.tcb = self.transport.active_open_connection(self.bound_src_ip, self.bound_src_port, dest_ip, dest_port)
@@ -570,7 +570,7 @@ class TcpIpSocket(Logger):
 
 class TransportLayer(Logger):
     """Simulated transport layer capable of opening / communicating with
-    TcpConnections a between a source ip+port (ourselves) and some destination ip+port."""
+    TCPConnections a between a source ip+port (ourselves) and some destination ip+port."""
 
     network: NetworkLayer
 
@@ -578,8 +578,8 @@ class TransportLayer(Logger):
         super().__init__()
         self.network = NetworkLayer()
 
-    def create_socket(self) -> TcpIpSocket:
-        return TcpIpSocket(self)
+    def create_socket(self) -> TCPIPSocket:
+        return TCPIPSocket(self)
 
     def active_open_connection(self, src_ip: str, src_port: str, dest_ip: str, dest_port: str) -> TransportControlBlock:
         # Active open connection using TCP RFC 793 state diagram fig 6:
@@ -592,32 +592,32 @@ class TransportLayer(Logger):
         tcb.src_port = src_port
         tcb.dest_ip = dest_ip
         tcb.dest_port = dest_port
-        tcb.src_mss = TcpProtocol.HARDCODED_MSS
+        tcb.src_mss = TCPProtocol.HARDCODED_MSS
         tcb.state = TransportControlBlock.State.CLOSED
 
         # Initialize send sequence variables.
         tcb.iss = random.randint(0, 2**32 - 1)
         tcb.snd_una = tcb.iss
         tcb.snd_nxt = tcb.iss
-        tcb.snd_wnd = TcpProtocol.WINDOW_SIZE
+        tcb.snd_wnd = TCPProtocol.WINDOW_SIZE
         tcb.snd_wl1 = 0
         tcb.snd_wl2 = 0
 
         # Initialize receive sequence variables.
         tcb.irs = 0
         tcb.rcv_nxt = 0
-        tcb.rcv_wnd = TcpProtocol.WINDOW_SIZE
+        tcb.rcv_wnd = TCPProtocol.WINDOW_SIZE
 
         # ACTIVE 1. Create and send a SYN segment, set TCB state to SYN_SENT.
         self.logger.info("Sending handshake SYN...")
-        syn_options = [TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", tcb.src_mss))]
-        syn_segment = TcpProtocol.create_tcp_segment(
+        syn_options = [TCPOption(kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", tcb.src_mss))]
+        syn_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(syn=True),
+            flags=TCPFlags(syn=True),
             options=syn_options,
         )
         tcb.snd_una = syn_segment.seg_seq
@@ -633,7 +633,7 @@ class TransportLayer(Logger):
         # ACTIVE 2. Wait for SYNACK segment.
         self.logger.info("Receiving handshake SYNACK...")
         recv_segment, _ = self._receive_tcp_segment(tcb)
-        if recv_segment.flags != TcpFlags(syn=True, ack=True):
+        if recv_segment.flags != TCPFlags(syn=True, ack=True):
             raise Exception(f"Simulation Error: Server responded with invalid segment: {recv_segment.to_string()}")
 
         # Check they sent an acceptable ACK for our SYN.
@@ -651,19 +651,19 @@ class TransportLayer(Logger):
         tcb.snd_wl2 = recv_segment.seg_ack
 
         # If found MSS option in segment update TCB with dest MSS.
-        if mss_option := next((o for o in recv_segment.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
+        if mss_option := next((o for o in recv_segment.options if o.kind == TCPOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
             tcb.dest_mss = struct.unpack(">H", mss_option.data)[0]
             self.logger.debug(f"Received dest MSS: {tcb.dest_mss}.")
 
         # ACTIVE 3. Send a final response ACK segment, then set TCB state to ESTABLISHED.
         self.logger.info("Sending handshake ACK...")
-        ack_segment = TcpProtocol.create_tcp_segment(
+        ack_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(ack=True),
+            flags=TCPFlags(ack=True),
         )
         tcb.snd_una = ack_segment.seg_seq
         tcb.snd_nxt += ack_segment.seg_len
@@ -688,19 +688,19 @@ class TransportLayer(Logger):
         tcb.iss = random.randint(0, 2**32 - 1)
         tcb.snd_una = tcb.iss
         tcb.snd_nxt = tcb.iss
-        tcb.snd_wnd = TcpProtocol.WINDOW_SIZE
+        tcb.snd_wnd = TCPProtocol.WINDOW_SIZE
         tcb.snd_wl1 = 0
         tcb.snd_wl2 = 0
 
         # Initialize receive sequence variables.
         tcb.irs = 0
         tcb.rcv_nxt = 0
-        tcb.rcv_wnd = TcpProtocol.WINDOW_SIZE
+        tcb.rcv_wnd = TCPProtocol.WINDOW_SIZE
 
         # PASSIVE 1. Wait to receive first applicable SYN segment.
         self.logger.info("Handshake SYN...")
         recv_segment, segment_src_ip = self._receive_tcp_segment(tcb)
-        if not recv_segment.flags == TcpFlags(syn=True):
+        if not recv_segment.flags == TCPFlags(syn=True):
             raise Exception(f"Simulation Error: Client responded with non SYN segment: {recv_segment.to_string()}")
 
         # Update sequence numbers.
@@ -715,22 +715,22 @@ class TransportLayer(Logger):
         tcb.dest_port = recv_segment.src_port
 
         # If found MSS option in segment update TCB with dest MSS.
-        if mss_option := next((o for o in recv_segment.options if o.kind == TcpOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
+        if mss_option := next((o for o in recv_segment.options if o.kind == TCPOption.Kind.MAXIMUM_SEGMENT_SIZE), None):
             tcb.dest_mss = struct.unpack(">H", mss_option.data)[0]
             self.logger.debug(f"Received dest MSS: {tcb.dest_mss}.")
 
         # PASSIVE 2. Create and send a SYNACK segment, set TCB state to SYN_RCVD.
         self.logger.info("Handshake SYNACK...")
         syn_ack_options = [
-            TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TcpProtocol.HARDCODED_MSS))
+            TCPOption(kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE, data=struct.pack(">H", TCPProtocol.HARDCODED_MSS))
         ]
-        syn_ack_segment = TcpProtocol.create_tcp_segment(
+        syn_ack_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(syn=True, ack=True),
+            flags=TCPFlags(syn=True, ack=True),
             options=syn_ack_options,
         )
         tcb.snd_una = syn_ack_segment.seg_seq
@@ -745,7 +745,7 @@ class TransportLayer(Logger):
         # PASSIVE 3. Wait to receive a final ACK segment.
         self.logger.info("Handshake ACK...")
         recv_segment, segment_src_ip = self._receive_tcp_segment(tcb)
-        if not recv_segment.flags == TcpFlags(ack=True):
+        if not recv_segment.flags == TCPFlags(ack=True):
             raise Exception(f"Simulation Error: Client responded with non ACK segment: {recv_segment.to_string()}")
 
         # Check they sent an acceptable ACK for our SYNACK.
@@ -775,13 +775,13 @@ class TransportLayer(Logger):
 
         # ACTIVE 1. Send FIN, Enter FIN_WAIT_1.
         self.logger.info("Sending FIN...")
-        fin_segment = TcpProtocol.create_tcp_segment(
+        fin_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(fin=True),
+            flags=TCPFlags(fin=True),
         )
         tcb.snd_una = fin_segment.seg_seq
         tcb.snd_nxt += fin_segment.seg_len
@@ -797,7 +797,7 @@ class TransportLayer(Logger):
         # ACTIVE 2. Wait for ACK segment, wait for FIN, send ACK, proceed to TIME_WAIT.
         self.logger.info("Receiving ACK...")
         ack_segment, _ = self._receive_tcp_segment(tcb)
-        if ack_segment.flags != TcpFlags(ack=True):
+        if ack_segment.flags != TCPFlags(ack=True):
             raise Exception(f"Simulation Error: Received segment with invalid flags: {ack_segment.to_string()}")
 
         # Check they sent an acceptable ACK for the current communication.
@@ -813,7 +813,7 @@ class TransportLayer(Logger):
         # Receive FIN.
         self.logger.info("Receiving FIN...")
         fin_segment, _ = self._receive_tcp_segment(tcb)
-        if fin_segment.flags != TcpFlags(fin=True):
+        if fin_segment.flags != TCPFlags(fin=True):
             raise Exception(f"Simulation Error: Received segment with invalid flags: {fin_segment.to_string()}")
 
         # Check they sent an acceptable ACK for the current communication.
@@ -828,13 +828,13 @@ class TransportLayer(Logger):
 
         # Send ACK.
         self.logger.info("Sending ACK...")
-        ack_segment = TcpProtocol.create_tcp_segment(
+        ack_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(ack=True),
+            flags=TCPFlags(ack=True),
         )
         tcb.snd_una = ack_segment.seg_seq
         tcb.snd_nxt += ack_segment.seg_len
@@ -857,7 +857,7 @@ class TransportLayer(Logger):
         # PASSIVE 1. Receive FIN, Send ACK, Enter CLOSE_WAIT.
         self.logger.info("Receiving FIN...")
         fin_segment, _ = self._receive_tcp_segment(tcb)
-        if fin_segment.flags != TcpFlags(fin=True):
+        if fin_segment.flags != TCPFlags(fin=True):
             raise Exception(f"Simulation Error: Received segment with invalid flags: {fin_segment.to_string()}")
 
         # Check they sent an acceptable ACK for the current communication.
@@ -872,13 +872,13 @@ class TransportLayer(Logger):
 
         # Send ACK.
         self.logger.info("Sending ACK...")
-        ack_segment = TcpProtocol.create_tcp_segment(
+        ack_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(ack=True),
+            flags=TCPFlags(ack=True),
         )
         tcb.snd_una = ack_segment.seg_seq
         tcb.snd_nxt += ack_segment.seg_len
@@ -891,13 +891,13 @@ class TransportLayer(Logger):
 
         # Send FIN.
         self.logger.info("Sending FIN...")
-        fin_segment = TcpProtocol.create_tcp_segment(
+        fin_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
             ack_number=tcb.rcv_nxt,
             window=tcb.rcv_wnd,
-            flags=TcpFlags(fin=True),
+            flags=TCPFlags(fin=True),
         )
         tcb.snd_una = fin_segment.seg_seq
         tcb.snd_nxt += fin_segment.seg_len
@@ -907,7 +907,7 @@ class TransportLayer(Logger):
         # PASSIVE 3. Receive ACK, send nothing, Enter CLOSED.
         self.logger.info("Receiving ACK...")
         ack_segment, _ = self._receive_tcp_segment(tcb)
-        if ack_segment.flags != TcpFlags(ack=True):
+        if ack_segment.flags != TCPFlags(ack=True):
             raise Exception(f"Simulation Error: Received segment with invalid flags: {ack_segment.to_string()}")
 
         # Check they sent an acceptable ACK for the current communication.
@@ -932,7 +932,7 @@ class TransportLayer(Logger):
         if len(tcb.recv_buffer) == 0:
             # Receive first PSHACK segment.
             segment, _ = self._receive_tcp_segment(tcb)
-            if segment.flags != TcpFlags(psh=True, ack=True):
+            if segment.flags != TCPFlags(psh=True, ack=True):
                 raise Exception(f"Simulation Error: Received segment with invalid flags: {segment.to_string()}")
 
             # Check they sent an acceptable ACK for the current communication.
@@ -946,13 +946,13 @@ class TransportLayer(Logger):
             tcb.snd_wl2 = segment.seg_ack
 
             # Respond with ACK.
-            ack_segment = TcpProtocol.create_tcp_segment(
+            ack_segment = TCPProtocol.create_tcp_segment(
                 src_port=tcb.src_port,
                 dest_port=tcb.dest_port,
                 seq_number=tcb.snd_nxt,
                 ack_number=tcb.rcv_nxt,
                 window=tcb.rcv_wnd,
-                flags=TcpFlags(ack=True),
+                flags=TCPFlags(ack=True),
             )
             tcb.snd_una = ack_segment.seg_seq
             tcb.snd_nxt += ack_segment.seg_len
@@ -978,8 +978,8 @@ class TransportLayer(Logger):
             raise Exception(f"Simulation Error: Segment size {len(data)} exceeds dest MSS {tcb.dest_mss}.")
 
         # Create single segment with all application data.
-        pshack_flags = TcpFlags(psh=True, ack=True)
-        pshack_segment = TcpProtocol.create_tcp_segment(
+        pshack_flags = TCPFlags(psh=True, ack=True)
+        pshack_segment = TCPProtocol.create_tcp_segment(
             src_port=tcb.src_port,
             dest_port=tcb.dest_port,
             seq_number=tcb.snd_nxt,
@@ -994,7 +994,7 @@ class TransportLayer(Logger):
 
         # Receive responding ACK segment.
         ack_segment, _ = self._receive_tcp_segment(tcb)
-        if ack_segment.flags != TcpFlags(ack=True):
+        if ack_segment.flags != TCPFlags(ack=True):
             raise Exception(f"Simulation Error: Received segment with invalid flags: {ack_segment.to_string()}")
 
         # Check they sent an acceptable ACK for the current communication.
@@ -1007,17 +1007,17 @@ class TransportLayer(Logger):
         tcb.snd_wl1 = ack_segment.seg_seq
         tcb.snd_wl2 = ack_segment.seg_ack
 
-    def _receive_tcp_segment(self, tcb: TransportControlBlock) -> tuple[TcpSegment, str]:
+    def _receive_tcp_segment(self, tcb: TransportControlBlock) -> tuple[TCPSegment, str]:
         # Explictly does not check TCB state or SEQ / ACK numbers.
         # This responsibility is left to the caller.
 
         # Receive and parse the latest segment.
         # Guaranteed to be fully received due if communicated MSS.
         segment_data, segment_src_ip = self.network.receive(tcb.src_ip)
-        segment = TcpProtocol.parse_tcp_segment(segment_data)
+        segment = TCPProtocol.parse_tcp_segment(segment_data)
         self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {segment.to_string()=}")
-        self.exam_logger.info(TcpProtocol.get_exam_string(segment, tcb.irs, tcb.iss, note="RECEIVED"))
+        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.irs, tcb.iss, note="RECEIVED"))
 
         # Check segment ip and port is for this connection.
         if segment.dest_port != tcb.src_port:
@@ -1026,7 +1026,7 @@ class TransportLayer(Logger):
             )
 
         # Check segment checksum is correct
-        checksum = TcpProtocol.calculate_checksum(segment, segment_src_ip, tcb.src_ip)
+        checksum = TCPProtocol.calculate_checksum(segment, segment_src_ip, tcb.src_ip)
         if checksum != segment.checksum:
             raise Exception(
                 f"Server waiting to accept connections received segment with incorrect checksum: {segment.to_string()}"
@@ -1035,15 +1035,15 @@ class TransportLayer(Logger):
         # Log and return segment
         return segment, segment_src_ip
 
-    def _send_tcp_segment(self, tcb: TransportControlBlock, segment: TcpSegment) -> None:
+    def _send_tcp_segment(self, tcb: TransportControlBlock, segment: TCPSegment) -> None:
         # Explictly does not check TCB state or SEQ / ACK numbers.
         # This responsibility is left to the caller.
 
         # Set checksum on the segment using pseudo header info.
-        segment.checksum = TcpProtocol.calculate_checksum(segment, tcb.src_ip, tcb.dest_ip)
+        segment.checksum = TCPProtocol.calculate_checksum(segment, tcb.src_ip, tcb.dest_ip)
 
         # Log and send segment
         self.logger.info(f"Sending {segment.to_string()=}...")
         self.network.send(tcb.dest_ip, segment.to_bytes())
         self.logger.debug("⬇️  [TCP->Network]")
-        self.exam_logger.info(TcpProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))
+        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))

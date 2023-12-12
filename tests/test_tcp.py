@@ -1,4 +1,4 @@
-from layer_transport import TcpProtocol, TcpFlags, TcpOption
+from layer_transport import TCPProtocol, TCPFlags, TCPOption
 
 import struct
 
@@ -8,14 +8,14 @@ def test():
 
 
 def test_tcp_flags_to_string():
-    tcp_flags = TcpFlags(syn=True, ack=True)
+    tcp_flags = TCPFlags(syn=True, ack=True)
     tcp_flags_string = tcp_flags.to_string()
 
     assert tcp_flags_string == "010010"
 
 
 def test_tcp_flags_to_bytes():
-    tcp_flags = TcpFlags(syn=True, ack=True)
+    tcp_flags = TCPFlags(syn=True, ack=True)
     tcp_flags_bytes = tcp_flags.to_bytes()
 
     assert tcp_flags_bytes == bytes([int("010010", base=2)])
@@ -23,27 +23,27 @@ def test_tcp_flags_to_bytes():
 
 def test_tcp_parse_flags():
     tcp_flags_bytes = bytes([0b00010010])
-    tcp_flags = TcpFlags.from_bytes(tcp_flags_bytes)
+    tcp_flags = TCPFlags.from_bytes(tcp_flags_bytes)
 
-    assert tcp_flags == TcpFlags(syn=True, ack=True)
+    assert tcp_flags == TCPFlags(syn=True, ack=True)
 
 
 def test_tcp_option_to_string():
-    tcp_option = TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST)
+    tcp_option = TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST)
     tcp_option_string = tcp_option.to_string()
 
     assert tcp_option_string == "kind=END_OF_OPTION_LIST"
 
 
 def test_tcp_option_to_bytes():
-    tcp_option = TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST)
+    tcp_option = TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST)
     tcp_option_bytes = tcp_option.to_bytes()
 
     assert tcp_option_bytes == bytes([0])
 
 
 def test_tcp_option_to_bytes_with_data():
-    tcp_option = TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=bytes([1]))
+    tcp_option = TCPOption(kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE, data=bytes([1]))
     tcp_option_bytes = tcp_option.to_bytes()
 
     assert tcp_option_bytes == bytes([2, 3, 1])
@@ -51,25 +51,25 @@ def test_tcp_option_to_bytes_with_data():
 
 def test_tcp_parse_option_with_no_data():
     tcp_option_bytes = bytes([0])
-    tcp_option = TcpOption.from_bytes(tcp_option_bytes)
+    tcp_option = TCPOption.from_bytes(tcp_option_bytes)
 
-    assert tcp_option == TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST)
+    assert tcp_option == TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST)
 
 
 def test_tcp_parse_option_with_data():
     tcp_option_bytes = bytes([2, 4, 0, 255])
-    tcp_option = TcpOption.from_bytes(tcp_option_bytes)
+    tcp_option = TCPOption.from_bytes(tcp_option_bytes)
 
-    assert tcp_option == TcpOption(kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE, data=bytes([0, 255]))
+    assert tcp_option == TCPOption(kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE, data=bytes([0, 255]))
 
 
 def test_tcp_segment_to_bytes():
     # Create a basic SYN segment
-    tcp_flags = TcpFlags(syn=True)
+    tcp_flags = TCPFlags(syn=True)
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_tcp_segment(
+    tcp_segment = TCPProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -101,22 +101,22 @@ def test_tcp_segment_to_bytes():
 
 def test_tcp_segment_to_bytes_with_options():
     # Create a basic SYNACK segment with some options
-    tcp_flags = TcpFlags(syn=True, ack=True)
+    tcp_flags = TCPFlags(syn=True, ack=True)
 
     tcp_options = [
         # Maximum segment size option
-        TcpOption(
-            kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE,
+        TCPOption(
+            kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE,
             data=struct.pack(">H", 65535),
         ),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_tcp_segment(
+    tcp_segment = TCPProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -169,11 +169,11 @@ def test_tcp_segment_to_bytes_with_options():
 
 def test_tcp_parse_segment():
     # Create a basic SYN segment
-    tcp_flags = TcpFlags(syn=True)
+    tcp_flags = TCPFlags(syn=True)
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_tcp_segment(
+    tcp_segment = TCPProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -183,27 +183,27 @@ def test_tcp_parse_segment():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
+    assert TCPProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
 
 
 def test_tcp_parse_segment_with_options():
     # Create a basic SYNACK segment with some options
-    tcp_flags = TcpFlags(syn=True, ack=True)
+    tcp_flags = TCPFlags(syn=True, ack=True)
 
     tcp_options = [
         # Maximum segment size option
-        TcpOption(
-            kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE,
+        TCPOption(
+            kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE,
             data=struct.pack(">H", 65535),
         ),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_tcp_segment(
+    tcp_segment = TCPProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -214,27 +214,27 @@ def test_tcp_parse_segment_with_options():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
+    assert TCPProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
 
 
 def test_tcp_parse_segment_with_options_and_data():
     # Create a basic SYNACK segment with some options
-    tcp_flags = TcpFlags(syn=True, ack=True)
+    tcp_flags = TCPFlags(syn=True, ack=True)
 
     tcp_options = [
         # Maximum segment size option
-        TcpOption(
-            kind=TcpOption.Kind.MAXIMUM_SEGMENT_SIZE,
+        TCPOption(
+            kind=TCPOption.Kind.MAXIMUM_SEGMENT_SIZE,
             data=struct.pack(">H", 65535),
         ),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.NO_OPERATION),
-        TcpOption(kind=TcpOption.Kind.END_OF_OPTION_LIST),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.NO_OPERATION),
+        TCPOption(kind=TCPOption.Kind.END_OF_OPTION_LIST),
     ]
 
     source_port = 59999
     destination_port = 80
-    tcp_segment = TcpProtocol.create_tcp_segment(
+    tcp_segment = TCPProtocol.create_tcp_segment(
         source_port,
         destination_port,
         seq_number=0,
@@ -246,4 +246,4 @@ def test_tcp_parse_segment_with_options_and_data():
     )
     tcp_segment_bytes = tcp_segment.to_bytes()
 
-    assert TcpProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment
+    assert TCPProtocol.parse_tcp_segment(tcp_segment_bytes) == tcp_segment

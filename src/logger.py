@@ -79,7 +79,10 @@ class Logger:
         elif self.__class__.__name__.islower():
             class_name = self.__class__.__name__.title()
         else:
-            class_name = " ".join(re.findall("[A-Z][a-z]*", self.__class__.__name__))
+            # (?: ... | ...) Non-capturing group of either:
+            # - [A-Z]+(?=[A-Z][a-z]) Acronym followed by non acronym
+            # - [A-Z][a-z]+ Word starting with first letter capital
+            class_name = " ".join(re.findall("(?:[A-Z]+(?=[A-Z][a-z])|[A-Z][a-z]+)", self.__class__.__name__))
 
         if LOG_CLASS_FILTER and class_name != LOG_CLASS_FILTER:
             self.logger = DummyObject()

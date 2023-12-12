@@ -82,20 +82,20 @@ class DNSServer:
 #    |                    Options                    |    Padding    |
 #    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 @dataclass
-class IpPacket:
+class IPPacket:
     pass
 
 
-class IpProtocol:
+class IPProtocol:
     @staticmethod
-    def create_ip_packet(src_ip: str, dest_ip: str, data: bytes) -> IpPacket:
+    def create_ip_packet(src_ip: str, dest_ip: str, data: bytes) -> IPPacket:
         pass
 
     @staticmethod
-    def parse_ip_packet(packet_bytes: bytes) -> IpPacket:
+    def parse_ip_packet(packet_bytes: bytes) -> IPPacket:
         pass
 
-    def get_exam_string(ip_packet: IpPacket, note: str = "") -> str:
+    def get_exam_string(ip_packet: IPPacket, note: str = "") -> str:
         pass
 
 
