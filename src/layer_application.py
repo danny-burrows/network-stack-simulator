@@ -87,10 +87,13 @@ class HttpProtocol:
 
         start, headers, body = HttpProtocol._parse_message(req_bytes)
 
-        if len(start) != 3:
-            raise ValueError(f"HTTP Request Parse Error: Invalid start line of length '{len(start)}': {req_bytes}!")
+        start_elements = start.split(HttpProtocol.SP)
+        if len(start_elements) != 3:
+            raise ValueError(
+                f"HTTP Request Parse Error: Invalid start line of length '{len(start_elements)}': {req_bytes}!"
+            )
 
-        (method, uri, version) = start
+        method, uri, version = start_elements
 
         if method not in HttpProtocol.VALID_METHODS:
             raise ValueError(f"HTTP Request Parse Error: Unsupported method '{method}': {req_bytes}!")
@@ -108,10 +111,13 @@ class HttpProtocol:
 
         start, headers, body = HttpProtocol._parse_message(res_bytes)
 
-        if len(start) != 3:
-            raise ValueError(f"HTTP Response Parse Error: Invalid start line of length '{len(start)}': {res_bytes}!")
+        start_elements = start.split(HttpProtocol.SP)
+        if len(start_elements) < 3:
+            raise ValueError(
+                f"HTTP Response Parse Error: Invalid start line of length '{len(start_elements)}': {res_bytes}!"
+            )
 
-        version, status_code, status_msg = start
+        version, status_code, status_msg = start_elements[0], start_elements[1], " ".join(start_elements[2:])
 
         if version != HttpProtocol.VERSION:
             raise ValueError(f"HTTP Response Parse Error: Unsupported version '{version}': {res_bytes}!")
@@ -144,7 +150,8 @@ class HttpProtocol:
             raise ValueError(f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})")
 
         # RFC 2616 specifies some start-line which can be a request-line or a status-line, hence the naming chosen here.
-        start = header_lines.pop(0).split(HttpProtocol.SP)
+        # start = header_lines.pop(0).split(HttpProtocol.SP)
+        start = header_lines.pop(0)
 
         headers = {}
         for header_line in header_lines:
@@ -223,19 +230,18 @@ class ApplicationLayer(Logger):
     def execute_client(self) -> None:
         # Hardcoded source IP for client
         # SRC host is hardcoded as we have no DNS mechanism
-        NetworkLayer.src_host = "192.168.0.4"
-        NetworkLayer.dest_host = "192.168.0.6"
+        NetworkLayer.src_ip = "192.168.0.4"
+        NetworkLayer.dest_ip = "192.168.0.6"
 
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
         # Active open socket and connect to server ip:80
-        hostname, port = "192.168.0.6", "80"
-        addr = f"{hostname}:{port}"
+        addr = hostname, _port = "https://www.gollum.mordor", 80
         sock.connect(addr)
 
-        # Send HEAD request and receive response
-        req = HttpProtocol.create_request("HEAD", "/", headers={"host": hostname})
+        # Send GET request for https://www.gollum.mordor/ring.txt and receive response
+        req = HttpProtocol.create_request("GET", "/ring.txt", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
         self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
@@ -247,8 +253,14 @@ class ApplicationLayer(Logger):
         self.logger.info(f"Received {res.to_string()=}")
         self.exam_logger.info(HttpProtocol.get_exam_string(res, note="RECEIVED"))
 
-        # Send GET request and receive response
-        req = HttpProtocol.create_request("GET", "/", headers={"host": hostname})
+        sock.close()
+
+        # Active open socket and connect to same server through another domain address
+        addr = hostname, _port = "http://rincewind.fourex.disc.atuin", 80
+        sock.connect(addr)
+
+        # Send GET request for http://rincewind.fourex.disc.atuin/luggage.jpg and receive response
+        req = HttpProtocol.create_request("GET", "/wizzard.jpg", headers={"host": hostname})
         self.logger.info(f"Sending {req.to_string()=}")
         self.exam_logger.info(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
@@ -264,17 +276,14 @@ class ApplicationLayer(Logger):
 
     def execute_server(self) -> None:
         # Hardcoded source IP for server
-        NetworkLayer.src_host = "192.168.0.6"
-        NetworkLayer.dest_host = "192.168.0.4"
+        NetworkLayer.src_ip = "192.168.0.6"
+        NetworkLayer.dest_ip = "192.168.0.4"
 
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
+        sock.bind((NetworkLayer.src_ip, 80))
 
         # Passive open socket and accept connections on local ip:80
-        hostname, port = NetworkLayer.src_host, "80"
-        addr = f"{hostname}:{port}"
-        sock.bind(addr)
-        sock.listen()
         sock.accept()
 
         # Receive HEAD request and send random 300 response
@@ -290,6 +299,11 @@ class ApplicationLayer(Logger):
         self.exam_logger.info(HttpProtocol.get_exam_string(res, note="SENDING"))
         self.logger.debug("⬇️  [HTTP->TCP]")
         sock.send(res.to_bytes())
+
+        sock.wait_close()
+
+        # Passive open socket again and accept connections on local ip:80
+        sock.accept()
 
         # Receive GET request and send random 300 response
         req_bytes = sock.receive(TcpProtocol.WINDOW_SIZE)

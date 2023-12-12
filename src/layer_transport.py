@@ -7,7 +7,7 @@ from enum import IntEnum
 from typing import Any
 
 from logger import Logger
-from layer_network import NetworkLayer
+from layer_network import NetworkLayer, DNSServer
 
 
 @dataclass
@@ -357,7 +357,7 @@ class TcpProtocol:
         )
 
     @staticmethod
-    def calculate_checksum(packet: TcpPacket, src_host: str, dest_host: str) -> int:
+    def calculate_checksum(packet: TcpPacket, src_ip: str, dest_ip: str) -> int:
         # Set checksum to 0 for calculation
         tmp_checksum = packet.checksum
         packet.checksum = 0
@@ -366,13 +366,13 @@ class TcpProtocol:
         words_to_sum = []
 
         # --- Pseudo header ---
-        # Split 32-bit src_host + dest_host into 16-bit words
-        src_host_bytes = struct.pack(">I", NetworkLayer.host_to_int(src_host))
-        dest_host_bytes = struct.pack(">I", NetworkLayer.host_to_int(dest_host))
-        words_to_sum.append(src_host_bytes[:2])
-        words_to_sum.append(src_host_bytes[2:])
-        words_to_sum.append(dest_host_bytes[:2])
-        words_to_sum.append(dest_host_bytes[2:])
+        # Split 32-bit src_ip + dest_ip into 16-bit words
+        src_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(src_ip))
+        dest_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(dest_ip))
+        words_to_sum.append(src_ip_bytes[:2])
+        words_to_sum.append(src_ip_bytes[2:])
+        words_to_sum.append(dest_ip_bytes[:2])
+        words_to_sum.append(dest_ip_bytes[2:])
 
         # Reserved + Protocol and TCP Length
         words_to_sum.append(struct.pack(">BB", 0x00, 0x06))
@@ -452,10 +452,10 @@ class TransportControlBlock(Logger):
         LAST_ACK = 9
         TIME_WAIT = 10
 
-    src_host: str
-    src_port: str
-    dest_host: str
-    dest_port: str
+    src_ip: str
+    src_port: int
+    dest_ip: str
+    dest_port: int
     src_mss: int
     dest_mss: int
     send_buffer: bytes = bytes()
@@ -485,55 +485,69 @@ class TransportControlBlock(Logger):
         super().__setattr__(__name, __value)
 
 
-class TcpSocket(Logger):
+class TcpIpSocket(Logger):
     """Very small mock socket that imitates the real interface
     used to interact with the transport layer."""
 
-    @staticmethod
-    def _parse_addr(addr: str) -> (str, int):
-        host, port = addr.split(":")
-        return host, int(port)
-
     transport: TransportLayer
-    bound_src_host: str
-    bound_src_port: str
-    tcb: TransportControlBlock
+    bound_src_ip: str
+    bound_src_port: int
+    tcb: TransportControlBlock = None
 
     def __init__(self, transport: TransportLayer) -> None:
         super().__init__()
         self.transport = transport
 
-    def connect(self, addr: str) -> None:
-        # Configure socket with bound host.
-        self.bound_src_host = NetworkLayer.src_host
+    @staticmethod
+    def _resolve_ip_from_host(host: str) -> str:
+        """Resolve an IP address from a host.
+        A host could be a hostname in domain notation or an IPv4 address.
+        """
+        host = host.lstrip("https://").lstrip("http://")
+
+        if host.count(".") == 3 and all(s.isdigit() for s in host.split(".")):
+            # Host is already an IP address.
+            return host
+        else:
+            # Host is a hostname, resolve it.
+            return DNSServer.resolve(host)
+
+    def connect(self, addr: tuple(str, int)) -> None:
+        # Configure socket with bound ip.
+        self.bound_src_ip = NetworkLayer.src_ip
 
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
         self.bound_src_port = random.randint(49152, 65535)
 
-        # Calculate destination host and port from addr.
-        dest_host, dest_port = self._parse_addr(addr)
+        # Calculate destination ip and port from addr.
+        dest_host, dest_port = addr
+        dest_ip = self._resolve_ip_from_host(dest_host)
 
         # Tell transport layer to perform active open procedure.
-        self.tcb = self.transport.active_open_connection(self.bound_src_host, self.bound_src_port, dest_host, dest_port)
+        self.tcb = self.transport.active_open_connection(self.bound_src_ip, self.bound_src_port, dest_ip, dest_port)
 
-    def bind(self, addr: str) -> None:
+    def bind(self, addr: tuple(str, int)) -> None:
         # Passive open procedure prerequisite.
         # Unpack addr then update socket configuration.
-        host, port = self._parse_addr(addr)
-        self.bound_src_host = host
-        self.bound_src_port = port
 
-    def listen(self) -> None:
-        # Step 1 of passive open procedure.
+        # Calculate destination ip and port from addr.
+        host, port = addr
+        ip = self._resolve_ip_from_host(host)
+        self.bound_src_ip, self.bound_src_port = (ip, port)
+
+    def accept(self) -> None:
+        # Step 1 and 2 of passive open procedure.
+
+        if self.tcb and self.tcb.state != TransportControlBlock.State.CLOSED:
+            raise Exception(f"Simulation Error: TCB is not in CLOSED state: {self.tcb.state}")
+
         # Create a TCB and set it to the LISTEN state.
         self.tcb = TransportControlBlock()
-        self.tcb.src_host = self.bound_src_host
+        self.tcb.src_ip = self.bound_src_ip
         self.tcb.src_port = self.bound_src_port
         self.tcb.state = TransportControlBlock.State.LISTEN
 
-    def accept(self) -> None:
-        # Step 2 of passive open procedure.
         # Tell transport layer to receive packets into the listening TCB.
         self.transport.passive_open_connection(self.tcb)
 
@@ -556,7 +570,7 @@ class TcpSocket(Logger):
 
 class TransportLayer(Logger):
     """Simulated transport layer capable of opening / communicating with
-    TcpConnections a between a source host+port (ourselves) and some destination host+port."""
+    TcpConnections a between a source ip+port (ourselves) and some destination ip+port."""
 
     network: NetworkLayer
 
@@ -564,21 +578,19 @@ class TransportLayer(Logger):
         super().__init__()
         self.network = NetworkLayer()
 
-    def create_socket(self) -> TcpSocket:
-        return TcpSocket(self)
+    def create_socket(self) -> TcpIpSocket:
+        return TcpIpSocket(self)
 
-    def active_open_connection(
-        self, src_host: str, src_port: str, dest_host: str, dest_port: str
-    ) -> TransportControlBlock:
+    def active_open_connection(self, src_ip: str, src_port: str, dest_ip: str, dest_port: str) -> TransportControlBlock:
         # Active open connection using TCP RFC 793 state diagram fig 6:
         # https://datatracker.ietf.org/doc/html/rfc793#section-3.4
-        self.logger.info(f"Initiating active on {src_port}->{dest_port}, performing handshake.")
+        self.logger.info(f"Initiating open active on {src_port}->{dest_port}, performing handshake.")
 
         # Create a TCB and set it to the fictional CLOSED state.
         tcb = TransportControlBlock()
-        tcb.src_host = src_host
+        tcb.src_ip = src_ip
         tcb.src_port = src_port
-        tcb.dest_host = dest_host
+        tcb.dest_ip = dest_ip
         tcb.dest_port = dest_port
         tcb.src_mss = TcpProtocol.HARDCODED_MSS
         tcb.state = TransportControlBlock.State.CLOSED
@@ -687,7 +699,7 @@ class TransportLayer(Logger):
 
         # PASSIVE 1. Wait to receive first applicable SYN packet.
         self.logger.info("Handshake SYN...")
-        recv_packet, packet_src_host = self._receive_tcp_packet(tcb)
+        recv_packet, packet_src_ip = self._receive_tcp_packet(tcb)
         if not recv_packet.flags == TcpFlags(syn=True):
             raise Exception(f"Simulation Error: Client responded with non SYN packet: {recv_packet.to_string()}")
 
@@ -698,8 +710,8 @@ class TransportLayer(Logger):
         tcb.snd_wl1 = recv_packet.seg_seq
         tcb.snd_wl2 = recv_packet.seg_ack
 
-        # Update TCB with host and port of received packet.
-        tcb.dest_host = packet_src_host
+        # Update TCB with ip and port of received packet.
+        tcb.dest_ip = packet_src_ip
         tcb.dest_port = recv_packet.src_port
 
         # If found MSS option in packet update TCB with dest MSS.
@@ -732,7 +744,7 @@ class TransportLayer(Logger):
 
         # PASSIVE 3. Wait to receive a final ACK packet.
         self.logger.info("Handshake ACK...")
-        recv_packet, packet_src_host = self._receive_tcp_packet(tcb)
+        recv_packet, packet_src_ip = self._receive_tcp_packet(tcb)
         if not recv_packet.flags == TcpFlags(ack=True):
             raise Exception(f"Simulation Error: Client responded with non ACK packet: {recv_packet.to_string()}")
 
@@ -1001,37 +1013,37 @@ class TransportLayer(Logger):
 
         # Receive and parse the latest packet.
         # Guaranteed to be fully received due if communicated MSS.
-        packet_data, packet_src_host = self.network.receive(tcb.src_host)
+        packet_data, packet_src_ip = self.network.receive(tcb.src_ip)
         packet = TcpProtocol.parse_packet(packet_data)
         self.logger.debug("⬆️  [Network->TCP]")
         self.logger.info(f"Received {packet.to_string()=}")
         self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.irs, tcb.iss, note="RECEIVED"))
 
-        # Check packet host and port is for this connection.
+        # Check packet ip and port is for this connection.
         if packet.dest_port != tcb.src_port:
             raise Exception(
                 f"Server waiting to accept connections received packet for incorrect port: {packet.to_string()}"
             )
 
         # Check packet checksum is correct
-        checksum = TcpProtocol.calculate_checksum(packet, packet_src_host, tcb.src_host)
+        checksum = TcpProtocol.calculate_checksum(packet, packet_src_ip, tcb.src_ip)
         if checksum != packet.checksum:
             raise Exception(
                 f"Server waiting to accept connections received packet with incorrect checksum: {packet.to_string()}"
             )
 
         # Log and return packet
-        return packet, packet_src_host
+        return packet, packet_src_ip
 
     def _send_tcp_packet(self, tcb: TransportControlBlock, packet: TcpPacket) -> None:
         # Explictly does not check TCB state or SEQ / ACK numbers.
         # This responsibility is left to the caller.
 
         # Set checksum on the packet using pseudo header info.
-        packet.checksum = TcpProtocol.calculate_checksum(packet, tcb.src_host, tcb.dest_host)
+        packet.checksum = TcpProtocol.calculate_checksum(packet, tcb.src_ip, tcb.dest_ip)
 
         # Log and send packet
         self.logger.info(f"Sending {packet.to_string()=}...")
-        self.network.send(tcb.dest_host, packet.to_bytes())
+        self.network.send(tcb.dest_ip, packet.to_bytes())
         self.logger.debug("⬇️  [TCP->Network]")
         self.exam_logger.info(TcpProtocol.get_exam_string(packet, tcb.iss, tcb.irs, note="SENDING"))
