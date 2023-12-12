@@ -6,10 +6,16 @@ import random
 
 
 class HttpProtocol:
-    # This HTTP simulation is based on the HTTP/1.1 standard.
-    # It uses RFC 2616 throughout to verify actions taken.
-    # RCP 2616: https://datatracker.ietf.org/doc/html/rfc2616
-    # Summary of RFC 2616, used for clarification: https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
+    """This class represents a HTTP simulation based on RFC 2616.
+
+    The class itself allows for parsing and creating HTTP Messages (Requests and Responses).
+
+    RFC 2616 has been referenced heavily throughout to verify this implementation
+    is correct.
+
+    - RFC 2616: https://datatracker.ietf.org/doc/html/rfc2616
+    - Summary of RFC 2616, used in places for clarification: https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html
+    """
 
     # HTTP Version for this simulation.
     VERSION = "HTTP/1.1"
