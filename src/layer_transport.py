@@ -243,8 +243,15 @@ class TcpPacket:
 
 
 class TcpProtocol:
-    """https://datatracker.ietf.org/doc/html/rfc793
-    Utility class for creating and parsing TCP packets."""
+    """This class represents a TCP simulation based on RFC 793.
+
+    The class itself allows for parsing and creating TCP frames or "packets".
+
+    RFC 793 has been referenced heavily throughout to verify this implementation
+    is correct.
+
+    - RFC 793: https://datatracker.ietf.org/doc/html/rfc793
+    """
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
@@ -433,7 +440,7 @@ class TransportControlBlock(Logger):
     """Struct for maintaining state for a TCP connection."""
 
     class State(IntEnum):
-        CLOSED = 0  # CLOSED is a defined but fictional state, however it is useful for the simulation.
+        CLOSED = 0  # CLOSED is a defined but "fictional" state in RFC 793, however it is useful for the simulation.
         LISTEN = 1
         SYN_SENT = 2
         SYN_RECEIVED = 3
@@ -480,7 +487,7 @@ class TransportControlBlock(Logger):
 
 class TcpSocket(Logger):
     """Very small mock socket that imitates the real interface
-    used to interact with TCP Streams."""
+    used to interact with the transport layer."""
 
     @staticmethod
     def _parse_addr(addr: str) -> (str, int):
@@ -549,7 +556,7 @@ class TcpSocket(Logger):
 
 class TransportLayer(Logger):
     """Simulated transport layer capable of opening / communicating with
-    TcpConnections a between a source host/port (ourselves) and some destination host/port."""
+    TcpConnections a between a source host+port (ourselves) and some destination host+port."""
 
     network: NetworkLayer
 
