@@ -353,7 +353,7 @@ class IPProtocol:
             version=4,  # Hardcoded to IPv4 for this simulation (also this is the version covered by RFC 791)
             ihl=ihl,
             type_of_service=0,  # Hardcoded to 0 (Routine) as described in RFC 791
-            total_length=20 + len(data),
+            total_length=20 + length_of_options_bytes + len(data),
             identification=0,  # Hardcoded to 0 as unused as data fragmenting is not implemented
             flags=IPFlags(),  # See IPFlags for default values - hardcoded for this simulation
             fragment_offset=0,  # Hardcoded to 0 as unused as data fragmenting is not implemented
