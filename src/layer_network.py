@@ -357,9 +357,9 @@ class IPProtocol:
             identification=0,  # Hardcoded to 0 as unused as data fragmenting is not implemented
             flags=IPFlags(),  # See IPFlags for default values - hardcoded for this simulation
             fragment_offset=0,  # Hardcoded to 0 as unused as data fragmenting is not implemented
-            time_to_live=64,  # TODO: Why
-            protocol=6,  # TODO: Why
-            header_checksum=0,  # TODO
+            time_to_live=64,
+            protocol=6,  # Hardcoded to TCP (6)for this simulation more details on Assigned number: https://datatracker.ietf.org/doc/html/rfc790
+            header_checksum=0,  # Checksum calculated outside this function to accomodate potential changes to header state such as TTL
             source_address=IPProtocol.ip_to_int(src_ip),
             destination_address=IPProtocol.ip_to_int(dest_ip),
             options=options,
@@ -505,8 +505,8 @@ class NetworkLayer(Logger):
             ip_int = random.randint(subnet_ip_int, subnet_ip_int + (2**32 - subnet_mask_int))
             return IPProtocol.int_to_ip(ip_int)
 
-        # Find default gateway  (hardcoded for our simulation)
-        # TODO: Comment about how we would actually find the gateway
+        # Find default gateway (hardcoded for our simulation)
+        # In a real network, the default gateway IP Address would be found using ARP at the link layer
         default_gateway_ip = "192.168.1.20"
         self.logger.debug(f"Discovered default gateway '{default_gateway_ip}'")
 
@@ -516,8 +516,9 @@ class NetworkLayer(Logger):
         # Add local subnet to routing table
         self.routing_table.add_route(subnet_ip, "0.0.0.0", subnet_mask, "U", 600, "eth0")
 
-        # Using DHCP discover IP address (hardcoded for our simulation)
-        # TODO: Comment on how this would really happen with  DHCP
+        # In a real scenario the DHCP server would be found using various methods and
+        # the DHCP server would assign an IP address to the client. For our simulation
+        # we will just generate an IP address in the subnet range.
         eth0_ip = generate_ip_in_range()
         self.logger.debug(f"Discovered IP address '{eth0_ip}' for interface eth0")
 
@@ -525,7 +526,6 @@ class NetworkLayer(Logger):
         self.interfaces["eth0"].bind(eth0_ip)
 
         # For our simulation we need to communicate the servers IP over to client
-        # TODO: Comment on how this would really happen with DHCP
         # TODO: There may be a better way to do this in this simulation
         # TODO: Ensure exam logging is doing what we expect
         # If client then populate DNS server with records
@@ -582,6 +582,14 @@ class NetworkLayer(Logger):
             raise Exception(
                 f"Checksum mismatch! Calculated checksum {calculated_checksum} does not match packet checksum {packet.header_checksum}"
             )
+
+        # Simulates the packet being dropped if the TTL is 0
+        packet.time_to_live -= 1
+        if packet.time_to_live == 0:
+            self.logger.debug(
+                f"❌ Dropped packet on '{interface.name}' from '{packet_src_ip}' to '{interface.bound_ip}' due to TTL being 0 packet={packet.to_string()}"
+            )
+            raise Exception("Simulation Error: Packet dropped due to TTL being 0")
 
         # Return final packet and IP
         self.logger.debug(
