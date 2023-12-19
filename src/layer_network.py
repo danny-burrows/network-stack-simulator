@@ -300,6 +300,33 @@ class IPProtocol:
         return f"{(host_int >> 24) & 0xFF}.{(host_int >> 16) & 0xFF}.{(host_int >> 8) & 0xFF}.{host_int & 0xFF}"
 
     @staticmethod
+    def calculate_checksum(packet: IPPacket) -> int:
+        # Calculate checksum using method described in RFC
+
+        # Set checksum to 0 for calculation
+        tmp_checksum = packet.header_checksum
+        packet.header_checksum = 0
+
+        # Calculate checksum
+        # The checksum field is the 16 bit one's complement of the one's
+        # complement sum of all 16 bit words in the header.  For purposes of
+        # computing the checksum, the value of the checksum field is zero.
+        checksum = 0
+        packet_bytes = packet.to_bytes()
+        for i in range(0, len(packet_bytes), 2):
+            if i + 2 <= len(packet_bytes):
+                checksum += struct.unpack(">H", packet_bytes[i : i + 2])[0]
+            else:
+                # Handle the case where there's only one byte left
+                checksum += packet_bytes[i]
+        checksum = (checksum & 0xFFFF) + (checksum >> 16)
+
+        # Restore checksum
+        packet.header_checksum = tmp_checksum
+
+        return checksum
+
+    @staticmethod
     def create_ip_packet(
         src_ip: str,
         dest_ip: str,
@@ -514,8 +541,6 @@ class NetworkLayer(Logger):
             self.interfaces["eth0"].link.send(struct.pack(">I", IPProtocol.ip_to_int(self.local_ip)))
 
     def send(self, dest_ip: str, data: bytes) -> None:
-        # TODO: Calculate checksums
-
         # Resolve the route for dest IP
         route = self.routing_table.match_route(dest_ip)
         if not route:
@@ -526,6 +551,9 @@ class NetworkLayer(Logger):
         interface = self.interfaces[route.iface]
 
         packet = IPProtocol.create_ip_packet(interface.bound_ip, dest_ip, data)
+
+        # Calculate checksum
+        packet.header_checksum = IPProtocol.calculate_checksum(packet)
 
         # Send message down the interface
         self.logger.debug(
@@ -548,7 +576,12 @@ class NetworkLayer(Logger):
         packet = IPProtocol.parse_ip_packet(data)
         packet_src_ip = IPProtocol.int_to_ip(packet.source_address)
 
-        # TODO: Validate checksums
+        # Verify checksum
+        calculated_checksum = IPProtocol.calculate_checksum(packet)
+        if calculated_checksum != packet.header_checksum:
+            raise Exception(
+                f"Checksum mismatch! Calculated checksum {calculated_checksum} does not match packet checksum {packet.header_checksum}"
+            )
 
         # Return final packet and IP
         self.logger.debug(
