@@ -416,8 +416,40 @@ class IPProtocol:
             data=data,
         )
 
-    def get_exam_string(ip_packet: IPPacket, note: str = "") -> str:
-        pass
+    @staticmethod
+    def get_exam_string(packet: IPPacket, note: str = "") -> str:
+        def parse_value(field_name, value):
+            if field_name == "flags":
+                return f"{value.to_string()} {value.to_nice_string()}"
+            elif field_name == "source_address" or field_name == "destination_address":
+                return f"{value} ({IPProtocol.int_to_ip(value)})"
+            elif field_name == "options" and value:
+                return "".join(f"\n     |- {option.to_string()}" for option in value)
+            elif field_name == "version" and value == 4:
+                return "4 (IPv4)"
+            elif field_name == "protocol" and value == 6:
+                return "6 (TCP)"
+            elif value is not None:
+                return str(value)
+
+        message_fields = "\n".join(
+            f"  |- {field_name}: {parse_value(field_name, value)}" for field_name, value in vars(packet).items()
+        )
+
+        note_str = f" {note}" if note else " BEGIN"
+        note_padding = "-" * (len("-------------") - len(note_str))
+
+        return "\n".join(
+            (
+                f"------------{note_str} Network Layer Packet {note_padding}",
+                f"RAW DATA: {packet.to_bytes()}",
+                "PROTOCOL: IP",
+                f"PACKET STRING: {packet.to_string()}",
+                "PACKET FIELDS:",
+                message_fields,
+                "---------- END Network Layer Packet ----------",
+            )
+        )
 
 
 @dataclass
@@ -560,6 +592,7 @@ class NetworkLayer(Logger):
             f"⌛ Sending IP packet on '{interface.name}' from '{interface.bound_ip}' to '{dest_ip}' packet={packet.to_string()}..."
         )
         self.logger.debug("⬇️ [Network->Link]")
+        self.exam_logger.info(IPProtocol.get_exam_string(packet, note="SENDING"))
         interface.link.send(packet.to_bytes())
 
     def receive(self, src_ip: str) -> tuple[bytes, str]:
@@ -575,6 +608,7 @@ class NetworkLayer(Logger):
 
         packet = IPProtocol.parse_ip_packet(data)
         packet_src_ip = IPProtocol.int_to_ip(packet.source_address)
+        self.exam_logger.info(IPProtocol.get_exam_string(packet, note="RECEIVED"))
 
         # Verify checksum
         calculated_checksum = IPProtocol.calculate_checksum(packet)

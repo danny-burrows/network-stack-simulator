@@ -1048,6 +1048,6 @@ class TransportLayer(Logger):
 
         # Log and send segment
         self.logger.info(f"Sending {segment.to_string()=}...")
+        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))
         self.network.send(tcb.dest_ip, segment.to_bytes())
         self.logger.debug("⬇️  [TCP->Network]")
-        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))
