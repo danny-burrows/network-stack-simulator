@@ -8,6 +8,7 @@ from typing import Any
 
 from logger import Logger
 from layer_network import IPProtocol, NetworkLayer, DNSServer
+from layer_link import LinkLayer
 
 
 @dataclass
@@ -254,11 +255,14 @@ class TCPProtocol:
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
-    HARDCODED_MSS = 512
+    
+    # The Maximum Segment Size of a TCP Segment is calculated based on the MTU defined by the
+    # link layer - the size of the IP header (20 bytes) and the TCP header (20 bytes).
+    HARDCODED_MSS = LinkLayer.HARDCODED_MTU - 40
 
     # The receive window is the amount of data that can be sent before the receiver must ACK.
-    # We will use the maximum 16-bit window size of.
-    WINDOW_SIZE = 2**16 - 1  # 16-bit window size
+    # We will use the maximum 16-bit size (65535 bytes):
+    WINDOW_SIZE = 2**16 - 1
 
     @staticmethod
     def create_tcp_segment(

@@ -288,6 +288,13 @@ class IPPacket:
 
 
 class IPProtocol:
+    """Implementation of the IP protocol as specified in RFC 791.
+
+    This implementation is limited to IPv4 and does not support data fragmenting.
+    
+    RFC 791: https://datatracker.ietf.org/doc/html/rfc791
+    """
+    
     @staticmethod
     def ip_to_int(host: str) -> int:
         # Split the IP address into its four bytes and concatenate

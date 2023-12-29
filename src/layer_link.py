@@ -5,6 +5,9 @@ from layer_physical import PhysicalLayer
 class LinkLayer(Logger):
     physical: PhysicalLayer
 
+    # The MTU of Ethernet is generally 1500 bytes.
+    HARDCODED_MTU = 1500
+
     def __init__(self):
         super().__init__()
         self.physical = PhysicalLayer()
