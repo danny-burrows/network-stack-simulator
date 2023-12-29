@@ -255,7 +255,7 @@ class TCPProtocol:
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
-    
+
     # The Maximum Segment Size of a TCP Segment is calculated based on the MTU defined by the
     # link layer - the size of the IP header (20 bytes) and the TCP header (20 bytes).
     HARDCODED_MSS = LinkLayer.HARDCODED_MTU - 40
