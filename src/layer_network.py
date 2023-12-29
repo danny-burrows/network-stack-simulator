@@ -4,7 +4,7 @@ from enum import IntEnum
 import struct
 
 from logger import Logger
-from layer_link import LinkLayer
+from layer_link import Interface
 
 
 class DNSResourceRecord:
@@ -506,19 +506,6 @@ class RoutingTable:
         return best_match
 
 
-class Interface:
-    name: str
-    bound_ip: str
-    link: LinkLayer
-
-    def __init__(self, name: str):
-        self.name = name
-        self.link = LinkLayer()
-
-    def bind(self, ip: str):
-        self.bound_ip = ip
-
-
 class NetworkLayer(Logger):
     dns_server: DNSServer
     routing_table: RoutingTable
@@ -546,6 +533,9 @@ class NetworkLayer(Logger):
         subnet_mask = "255.0.0.0"
         server_ip = "192.168.0.6"
         client_ip = "192.168.0.4"
+
+        # TODO: Hardcode Interface MAC Address
+        # TODO: Hardcode populate Interface ARP table
 
         # Function to generate an IP in range specified by exam spec
         # def generate_ip_in_range() -> str:
@@ -603,7 +593,7 @@ class NetworkLayer(Logger):
         )
         self.logger.debug("⬇️ [Network->Link]")
         self.exam_logger.info(IPProtocol.get_exam_string(packet, note="SENDING"))
-        interface.link.send(packet.to_bytes())
+        interface.send(packet.to_bytes(), dest_ip)
 
     def receive(self, src_ip: str) -> tuple[bytes, str]:
         # Get the interface for the source IP
