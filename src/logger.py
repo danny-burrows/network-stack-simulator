@@ -87,7 +87,7 @@ class Logger:
         if LOG_CLASS_FILTER and class_name != LOG_CLASS_FILTER:
             self.logger = DummyObject()
 
-        if not ENABLE_MAIN_LOGGER:
+        elif not ENABLE_MAIN_LOGGER:
             self.logger = DummyObject()
 
         else:

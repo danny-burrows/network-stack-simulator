@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import IntEnum
-import random
 import struct
 
 from logger import Logger
@@ -81,7 +80,7 @@ class IPFlags:
 
     @classmethod
     def from_bitmask(cls, flags_bitmask: int) -> IPFlags:
-        # Extract first 6 bits into bools and construct
+        # Extract first 3 bits into bools and construct
         return cls(
             zero=bool(flags_bitmask & (2**2)),
             dont_fragment=bool(flags_bitmask & (2**1)),
@@ -101,7 +100,7 @@ class IPFlags:
         return sum(v * 2**i for i, v in enumerate(self.to_bitmask_list()[::-1]))
 
     def to_string(self) -> str:
-        return self.__str__()
+        return "".join(str(i) for i in self.to_bitmask_list())
 
     def to_nice_string(self) -> str:
         return f"({', '.join(flag_name.upper() for flag_name, flag_value in vars(self).items() if flag_value)})"
@@ -110,7 +109,7 @@ class IPFlags:
         return self.to_bitmask()
 
     def __str__(self) -> str:
-        return "".join(str(i) for i in self.to_bitmask_list())
+        return self.to_string()
 
     def __eq__(self, __value: IPFlags) -> bool:
         return self.to_bitmask() == __value.to_bitmask()
@@ -224,7 +223,10 @@ class IPPacket:
     data: bytes
 
     def to_string(self) -> str:
-        return self.__str__()
+        def str_list(lst):
+            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
+
+        return "|".join(str_list(self.__dict__.values()))
 
     def to_bytes(self) -> bytes:
         # Pack version, ihl, and type of service
@@ -282,10 +284,7 @@ class IPPacket:
         return header + self.data
 
     def __str__(self) -> str:
-        def str_list(lst):
-            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
-
-        return "|".join(str_list(self.__dict__.values()))
+        return self.to_string()
 
 
 class IPProtocol:
@@ -303,14 +302,13 @@ class IPProtocol:
     def calculate_checksum(packet: IPPacket) -> int:
         # Calculate checksum using method described in RFC
 
-        # Set checksum to 0 for calculation
+        # For purposes of computing the checksum, the value of the packet checksum field is zero.
         tmp_checksum = packet.header_checksum
         packet.header_checksum = 0
 
-        # Calculate checksum
+        # Calculate checksum.
         # The checksum field is the 16 bit one's complement of the one's
-        # complement sum of all 16 bit words in the header.  For purposes of
-        # computing the checksum, the value of the checksum field is zero.
+        # complement sum of all 16 bit words in the header.
         checksum = 0
         packet_bytes = packet.to_bytes()
         for i in range(0, len(packet_bytes), 2):
@@ -525,17 +523,19 @@ class NetworkLayer(Logger):
     def _add_interface(self, name: str):
         self.interfaces[name] = Interface(name)
 
-    def plug_in_and_perform_dhcp_discovery(self, client: bool = False) -> None:
-        # Function to generate an IP in range specified by exam spec
+    def plug_in_and_perform_dhcp_discovery(self, is_client: bool = False) -> None:
         # Exam specified IP Range (CIDR): 192.168.1.0/8 == (192.0.0.0/8)
         subnet_ip = "192.0.0.0"
         subnet_mask = "255.0.0.0"
+        server_ip = "192.168.0.6"
+        client_ip = "192.168.0.4"
 
-        def generate_ip_in_range() -> str:
-            subnet_mask_int = IPProtocol.ip_to_int(subnet_mask)
-            subnet_ip_int = IPProtocol.ip_to_int(subnet_ip)
-            ip_int = random.randint(subnet_ip_int, subnet_ip_int + (2**32 - subnet_mask_int))
-            return IPProtocol.int_to_ip(ip_int)
+        # Function to generate an IP in range specified by exam spec
+        # def generate_ip_in_range() -> str:
+        #     subnet_mask_int = IPProtocol.ip_to_int(subnet_mask)
+        #     subnet_ip_int = IPProtocol.ip_to_int(subnet_ip)
+        #     ip_int = random.randint(subnet_ip_int, subnet_ip_int + (2**32 - subnet_mask_int))
+        #     return IPProtocol.int_to_ip(ip_int)
 
         # Find default gateway (hardcoded for our simulation)
         # In a real network, the default gateway IP Address would be found using ARP at the link layer
@@ -549,28 +549,21 @@ class NetworkLayer(Logger):
         self.routing_table.add_route(subnet_ip, "0.0.0.0", subnet_mask, "U", 600, "eth0")
 
         # In a real scenario the DHCP server would be found using various methods and
-        # the DHCP server would assign an IP address to the client. For our simulation
-        # we will just generate an IP address in the subnet range.
-        eth0_ip = generate_ip_in_range()
+        # the DHCP server would assign an IP address to the client.
+        # For our simulation we hardcode it based on whether client or server.
+        eth0_ip = client_ip if is_client else server_ip
         self.logger.debug(f"Discovered IP address '{eth0_ip}' for interface eth0")
 
-        # Bind interface to discovered IP and update routing table accordingly
+        # Bind interface to discovered IP
         self.interfaces["eth0"].bind(eth0_ip)
 
-        # For our simulation we need to communicate the servers IP over to client
-        # TODO: There may be a better way to do this in this simulation
-        # TODO: Ensure exam logging is doing what we expect
-        # If client then populate DNS server with records
-        if client:
-            ip = IPProtocol.int_to_ip(struct.unpack(">I", self.interfaces["eth0"].link.receive())[0])
-            self.logger.debug(f"Received IP from server '{ip}'.")
-            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, ip))
+        # For our simulation we need to populate the DNS server with records manually.
+        # In a real scenario the DNS server would be found using various methods and
+        # the DNS server would be populated with records.
+        if is_client:
+            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, server_ip))
             self.dns_server.add_record(DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"))
             self.dns_server.add_record(DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"))
-        # If server then send IP to client
-        else:
-            self.logger.debug(f"Sending IP to client '{self.local_ip}'...")
-            self.interfaces["eth0"].link.send(struct.pack(">I", IPProtocol.ip_to_int(self.local_ip)))
 
     def send(self, dest_ip: str, data: bytes) -> None:
         # Resolve the route for dest IP
