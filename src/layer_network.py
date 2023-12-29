@@ -8,7 +8,9 @@ from layer_link import LinkLayer
 
 
 class DNSResourceRecord:
-    # https://tools.ietf.org/html/rfc1035#section-4.1.3
+    """A DNS resource record.
+    https://tools.ietf.org/html/rfc1035#section-4.1.3"""
+
     # Prefixed all with rr_ to avoid name collisions
     rr_name: str
     rr_type: str
@@ -16,8 +18,10 @@ class DNSResourceRecord:
     rr_ttl: int
     rr_rdata: str
 
-    def __init__(self, rr_name: str, rr_ttl: int, rr_rdata: str):
+    def __init__(self, rr_name: str, rr_type: str, rr_class: str, rr_ttl: int, rr_rdata: str):
         self.rr_name = rr_name
+        self.rr_type = rr_type
+        self.rr_class = rr_class
         self.rr_ttl = rr_ttl
         self.rr_rdata = rr_rdata
 
@@ -27,36 +31,42 @@ class DNSResourceRecord:
 
 
 class DNSARecord(DNSResourceRecord):
-    rr_type: str = "A"
-    rr_class: str = "IN"
+    """A DNS A record.
+    https://tools.ietf.org/html/rfc1035#section-3.4.1"""
 
     def __init__(self, rr_name: str, rr_ttl: int, rr_rdata: str):
-        super().__init__(rr_name, rr_ttl, rr_rdata)
+        super().__init__(rr_name, "A", "IN", rr_ttl, rr_rdata)
 
 
 class DNSCNAMERecord(DNSResourceRecord):
-    rr_type: str = "CNAME"
-    rr_class: str = "IN"
+    """A DNS CNAME record.
+    https://tools.ietf.org/html/rfc1035#section-3.3.1"""
 
     def __init__(self, rr_name: str, rr_ttl: int, rr_rdata: str):
-        super().__init__(rr_name, rr_ttl, rr_rdata)
+        super().__init__(rr_name, "CNAME", "IN", rr_ttl, rr_rdata)
 
 
 class DNSServer:
     _records = set()
 
     def _find_record_from_name(name: str) -> DNSResourceRecord:
+        # Find the first record with the given name
         for record in DNSServer._records:
             if record.rr_name == name:
                 return record
         raise Exception(f"Record {name} not found")
 
     def resolve(host: str) -> str:
+        # Resolve the host by following CNAME records until an A record is found.
+        # This is a naive implementation that does not handle loops nor aims to replicate
+        # the complexity of a real DNS server, which would need to handle things like caching and TTLs.
+        # A top level overview can be seen here RFC 1034: https://tools.ietf.org/html/rfc1034#section-5.3.3
         while potential_record := DNSServer._find_record_from_name(host):
             if potential_record.rr_type == "A":
                 return potential_record.rr_rdata
             elif potential_record.rr_type == "CNAME":
                 host = potential_record.rr_rdata
+
         raise Exception(f"Could not resolve host {host}")
 
     def add_record(self, record: DNSResourceRecord) -> None:
