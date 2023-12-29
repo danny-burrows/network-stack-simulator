@@ -54,7 +54,7 @@ class TCPFlags:
         return sum(v * 2**i for i, v in enumerate(self.to_bitmask_list()[::-1]))
 
     def to_string(self) -> str:
-        return self.__str__()
+        return "".join(str(i) for i in self.to_bitmask_list())
 
     def to_nice_string(self) -> str:
         return f"({', '.join(flag_name.upper() for flag_name, flag_value in vars(self).items() if flag_value)})"
@@ -63,7 +63,7 @@ class TCPFlags:
         return self.to_bitmask()
 
     def __str__(self) -> str:
-        return "".join(str(i) for i in self.to_bitmask_list())
+        return self.to_string()
 
     def __eq__(self, __value: TCPFlags) -> bool:
         return self.to_bitmask() == __value.to_bitmask()
@@ -124,7 +124,10 @@ class TCPOption:
         self.len = 1 if self.kind in TCPOption.SINGLE_BYTE_KINDS else 2 + len(self.data)
 
     def to_string(self) -> str:
-        return self.__str__()
+        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
+            return f"kind={TCPOption.Kind(self.kind).name}"
+        else:
+            return f"kind={TCPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
 
     def to_bytes(self) -> bytes:
         if self.kind in TCPOption.SINGLE_BYTE_KINDS:
@@ -136,10 +139,7 @@ class TCPOption:
         return self.len
 
     def __str__(self) -> str:
-        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
-            return f"kind={TCPOption.Kind(self.kind).name}"
-        else:
-            return f"kind={TCPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
+        return self.to_string()
 
 
 @dataclass
@@ -178,7 +178,10 @@ class TCPSegment:
         return self.ack_number
 
     def to_string(self) -> str:
-        return self.__str__()
+        def str_list(lst):
+            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
+
+        return "|".join(str_list(self.__dict__.values()))
 
     def to_bytes(self) -> bytes:
         # Pack ports, seq, and ack number
@@ -236,10 +239,7 @@ class TCPSegment:
         return header + self.data
 
     def __str__(self) -> str:
-        def str_list(lst):
-            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
-
-        return "|".join(str_list(self.__dict__.values()))
+        return self.to_string()
 
 
 class TCPProtocol:

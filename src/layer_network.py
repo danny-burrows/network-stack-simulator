@@ -185,7 +185,10 @@ class IPOption:
         self.len = 1 if self.kind in IPOption.SINGLE_BYTE_KINDS else 2 + len(self.data)
 
     def to_string(self) -> str:
-        return self.__str__()
+        if self.kind in IPOption.SINGLE_BYTE_KINDS:
+            return f"kind={IPOption.Kind(self.kind).name}"
+        else:
+            return f"kind={IPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
 
     def to_bytes(self) -> bytes:
         if self.kind in IPOption.SINGLE_BYTE_KINDS:
@@ -197,10 +200,7 @@ class IPOption:
         return self.len
 
     def __str__(self) -> str:
-        if self.kind in IPOption.SINGLE_BYTE_KINDS:
-            return f"kind={IPOption.Kind(self.kind).name}"
-        else:
-            return f"kind={IPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
+        return self.to_string()
 
 
 @dataclass
