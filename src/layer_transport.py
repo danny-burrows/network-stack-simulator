@@ -7,7 +7,8 @@ from enum import IntEnum
 from typing import Any
 
 from logger import Logger
-from layer_network import NetworkLayer, DNSServer
+from layer_network import IPProtocol, NetworkLayer, DNSServer
+from layer_link import LinkLayer
 
 
 @dataclass
@@ -53,7 +54,7 @@ class TCPFlags:
         return sum(v * 2**i for i, v in enumerate(self.to_bitmask_list()[::-1]))
 
     def to_string(self) -> str:
-        return self.__str__()
+        return "".join(str(i) for i in self.to_bitmask_list())
 
     def to_nice_string(self) -> str:
         return f"({', '.join(flag_name.upper() for flag_name, flag_value in vars(self).items() if flag_value)})"
@@ -62,7 +63,7 @@ class TCPFlags:
         return self.to_bitmask()
 
     def __str__(self) -> str:
-        return "".join(str(i) for i in self.to_bitmask_list())
+        return self.to_string()
 
     def __eq__(self, __value: TCPFlags) -> bool:
         return self.to_bitmask() == __value.to_bitmask()
@@ -123,7 +124,10 @@ class TCPOption:
         self.len = 1 if self.kind in TCPOption.SINGLE_BYTE_KINDS else 2 + len(self.data)
 
     def to_string(self) -> str:
-        return self.__str__()
+        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
+            return f"kind={TCPOption.Kind(self.kind).name}"
+        else:
+            return f"kind={TCPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
 
     def to_bytes(self) -> bytes:
         if self.kind in TCPOption.SINGLE_BYTE_KINDS:
@@ -135,10 +139,7 @@ class TCPOption:
         return self.len
 
     def __str__(self) -> str:
-        if self.kind in TCPOption.SINGLE_BYTE_KINDS:
-            return f"kind={TCPOption.Kind(self.kind).name}"
-        else:
-            return f"kind={TCPOption.Kind(self.kind).name} len={self.len} data=0x{self.data.hex()}"
+        return self.to_string()
 
 
 @dataclass
@@ -177,7 +178,10 @@ class TCPSegment:
         return self.ack_number
 
     def to_string(self) -> str:
-        return self.__str__()
+        def str_list(lst):
+            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
+
+        return "|".join(str_list(self.__dict__.values()))
 
     def to_bytes(self) -> bytes:
         # Pack ports, seq, and ack number
@@ -235,10 +239,7 @@ class TCPSegment:
         return header + self.data
 
     def __str__(self) -> str:
-        def str_list(lst):
-            return [f"{str_list(e)}" if isinstance(e, list) else str(e) for e in lst]
-
-        return "|".join(str_list(self.__dict__.values()))
+        return self.to_string()
 
 
 class TCPProtocol:
@@ -254,11 +255,14 @@ class TCPProtocol:
 
     # The MSS is usually the link MTU size minus the 40 bytes of the TCP and IP headers,
     # but many implementations use segments of 512 or 536 bytes. We will use 512 bytes.
-    HARDCODED_MSS = 512
+
+    # The Maximum Segment Size of a TCP Segment is calculated based on the MTU defined by the
+    # link layer - the size of the IP header (20 bytes) and the TCP header (20 bytes).
+    HARDCODED_MSS = LinkLayer.HARDCODED_MTU - 40
 
     # The receive window is the amount of data that can be sent before the receiver must ACK.
-    # We will use the maximum 16-bit window size of.
-    WINDOW_SIZE = 2**16 - 1  # 16-bit window size
+    # We will use the maximum 16-bit size (65535 bytes):
+    WINDOW_SIZE = 2**16 - 1
 
     @staticmethod
     def create_tcp_segment(
@@ -366,8 +370,8 @@ class TCPProtocol:
 
         # --- Pseudo header ---
         # Split 32-bit src_ip + dest_ip into 16-bit words
-        src_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(src_ip))
-        dest_ip_bytes = struct.pack(">I", NetworkLayer.ip_to_int(dest_ip))
+        src_ip_bytes = struct.pack(">I", IPProtocol.ip_to_int(src_ip))
+        dest_ip_bytes = struct.pack(">I", IPProtocol.ip_to_int(dest_ip))
         words_to_sum.append(src_ip_bytes[:2])
         words_to_sum.append(src_ip_bytes[2:])
         words_to_sum.append(dest_ip_bytes[:2])
@@ -497,23 +501,27 @@ class TCPIPSocket(Logger):
         super().__init__()
         self.transport = transport
 
-    @staticmethod
-    def _resolve_ip_from_host(host: str) -> str:
+    def _resolve_ip_from_host(self, host: str) -> str:
         """Resolve an IP address from a host.
         A host could be a hostname in domain notation or an IPv4 address.
         """
         host = host.lstrip("https://").lstrip("http://")
 
+        # Host is local IP address.
+        if host == "localhost" or host == "0.0.0.0":
+            return self.transport.network.local_ip
+
+        # Host is already an IP address.
         if host.count(".") == 3 and all(s.isdigit() for s in host.split(".")):
-            # Host is already an IP address.
             return host
+
+        # Host is a hostname, resolve it.
         else:
-            # Host is a hostname, resolve it.
             return DNSServer.resolve(host)
 
     def connect(self, addr: tuple(str, int)) -> None:
         # Configure socket with bound ip.
-        self.bound_src_ip = NetworkLayer.src_ip
+        self.bound_src_ip = self._resolve_ip_from_host("0.0.0.0")
 
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
@@ -522,16 +530,15 @@ class TCPIPSocket(Logger):
         # Calculate destination ip and port from addr.
         dest_host, dest_port = addr
         dest_ip = self._resolve_ip_from_host(dest_host)
-        self.logger.debug(f"Resolved hostname: {dest_host} to IP: {dest_ip}.")
+        self.logger.debug(f"Resolved hostname '{dest_host}' to IP '{dest_ip}'.")
 
         # Tell transport layer to perform active open procedure.
         self.tcb = self.transport.active_open_connection(self.bound_src_ip, self.bound_src_port, dest_ip, dest_port)
 
     def bind(self, addr: tuple(str, int)) -> None:
         # Passive open procedure prerequisite.
-        # Unpack addr then update socket configuration.
 
-        # Calculate destination ip and port from addr.
+        # Calculate destination ip and port from addr then configure.
         host, port = addr
         ip = self._resolve_ip_from_host(host)
         self.bound_src_ip, self.bound_src_port = (ip, port)
@@ -539,6 +546,7 @@ class TCPIPSocket(Logger):
     def accept(self) -> None:
         # Step 1 and 2 of passive open procedure.
 
+        # Ensure socket is not currently connected.
         if self.tcb and self.tcb.state != TransportControlBlock.State.CLOSED:
             raise Exception(f"Simulation Error: TCB is not in CLOSED state: {self.tcb.state}")
 
@@ -1044,6 +1052,6 @@ class TransportLayer(Logger):
 
         # Log and send segment
         self.logger.info(f"Sending {segment.to_string()=}...")
+        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))
         self.network.send(tcb.dest_ip, segment.to_bytes())
         self.logger.debug("⬇️  [TCP->Network]")
-        self.exam_logger.info(TCPProtocol.get_exam_string(segment, tcb.iss, tcb.irs, note="SENDING"))
