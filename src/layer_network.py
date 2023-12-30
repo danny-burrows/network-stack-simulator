@@ -532,8 +532,8 @@ class NetworkLayer(Logger):
         # Exam specified IP Range (CIDR): 192.168.1.0/8 == (192.0.0.0/8)
         SUBNET_IP = "192.0.0.0"
         SUBNET_MASK = "255.0.0.0"
-        SERVER_IP = "192.168.0.6"
-        CLIENT_IP = "192.168.0.4"
+        SERVER_IP_ADDRESS = "192.168.0.6"
+        CLIENT_IP_ADDRESS = "192.168.0.4"
 
         # Simulates plugging in the physical cables and performing ARP discovery to find the MAC address of the other host
         self.interfaces["eth0"].plug_in_and_perform_arp_discovery(is_client)
@@ -559,7 +559,7 @@ class NetworkLayer(Logger):
         # In a real scenario the DHCP server would be found using various methods and
         # the DHCP server would assign an IP address to the client.
         # For our simulation we hardcode it based on whether client or server.
-        eth0_ip = CLIENT_IP if is_client else SERVER_IP
+        eth0_ip = CLIENT_IP_ADDRESS if is_client else SERVER_IP_ADDRESS
         self.logger.debug(f"Discovered IP address '{eth0_ip}' for interface eth0")
 
         # Bind interface to discovered IP
@@ -569,7 +569,7 @@ class NetworkLayer(Logger):
         # In a real scenario the DNS server would be found using various methods and
         # the DNS server would be populated with records.
         if is_client:
-            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, SERVER_IP))
+            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, SERVER_IP_ADDRESS))
             self.dns_server.add_record(DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"))
             self.dns_server.add_record(DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"))
 

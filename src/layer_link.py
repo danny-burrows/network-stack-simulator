@@ -5,21 +5,12 @@ import struct
 from logger import Logger
 from layer_physical import PhysicalLayer
 
-SERVER_IP_ADDRESS = "192.168.0.6"
-CLIENT_IP_ADDRESS = "192.168.0.4"
-
-SERVER_MAC_ADDRESS = "02:00:00:00:00:00"
-CLIENT_MAC_ADDRESS = "02:00:00:00:00:01"
-
 
 class ARPTable:
     """Simple simulated implementation of an ARP table. Usually this would be stored in, and managed by, the the operating system kernel."""
 
     def __init__(self):
-        self.table = {
-            SERVER_IP_ADDRESS: SERVER_MAC_ADDRESS,
-            CLIENT_IP_ADDRESS: CLIENT_MAC_ADDRESS,
-        }
+        self.table = {}
 
     def add(self, ip: str, mac: int):
         self.table[ip] = mac
@@ -35,7 +26,7 @@ class EthernetFrame:
     preamble: bytes  # Includes the start of frame delimiter (SFD), see EthernetProtocol for details
     destination_mac: int
     source_mac: int
-    ether_type: int  # According to the standard this field is called "type" but can indicate the length.
+    ether_type: int  # According to the standard this field indicates the type of protocol used in transmission
     data: bytes
     fcs: int  # Frame check sequence
 
@@ -62,7 +53,8 @@ class EthernetFrame:
 class EthernetProtocol:
     """Implementation of the Ethernet protocol.
 
-    TODO: Probably need to find a source to reference for this :/
+    This implementation borrows heavily from the IEEE 802.3 communication standards.
+    References can be found here: https://en.wikipedia.org/wiki/IEEE_802.3
     """
 
     ETHER_SFD = 0b10101011
@@ -113,7 +105,7 @@ class EthernetProtocol:
         dest_mac_address: str,
         data: bytes = bytes(),
     ) -> EthernetFrame:
-        ether_type = 0x0800  # IPv4
+        ether_type = 0x0800  # IPv4 as stated in https://en.wikipedia.org/wiki/EtherType
 
         return EthernetFrame(
             preamble=EthernetProtocol.ETHER_PREAMBLE,
@@ -187,17 +179,22 @@ class LinkLayerInterface(Logger):
         self.physical_layer = PhysicalLayer()
 
     def plug_in_and_perform_arp_discovery(self, is_client: bool) -> None:
-        # TODO: Some duplication from network layer
-        SERVER_IP = "192.168.0.6"
-        SERVER_MAC_ADDRESS = "02:00:00:00:00:00"
-        CLIENT_IP = "192.168.0.4"
-        CLIENT_MAC_ADDRESS = "02:00:00:00:00:01"
+        """This function simulates the process of plugging in a NIC (Network Interface Card) and performing the initial ARP discovery over the LAN."""
 
-        # TODO: Comments
+        SERVER_MAC_ADDRESS = "02:00:00:00:00:00"
+        SERVER_IP_ADDRESS = "192.168.0.6"
+        CLIENT_MAC_ADDRESS = "02:00:00:00:00:01"
+        CLIENT_IP_ADDRESS = "192.168.0.4"
+
+        # This mac address would normally be "burned into" the network interface and
+        # although it could be spoofed shouldn't be able to change.
         self.MAC_ADDRESS = CLIENT_MAC_ADDRESS if is_client else SERVER_MAC_ADDRESS
 
-        dest_ip = CLIENT_IP if is_client else SERVER_IP
-        dest_mac = CLIENT_MAC_ADDRESS if is_client else SERVER_MAC_ADDRESS
+        # In a real system this process would involve using the ARP protocol to send
+        # requests and discover other hosts on the LAN. In this case we add the required
+        # entries to the ARP table to be able to contact the other host in this simulation.
+        dest_ip = SERVER_IP_ADDRESS if is_client else CLIENT_IP_ADDRESS
+        dest_mac = SERVER_MAC_ADDRESS if is_client else CLIENT_MAC_ADDRESS
         self.arp.add(dest_ip, dest_mac)
 
     def bind(self, ip: str):
