@@ -90,7 +90,7 @@ class EthernetProtocol:
                 if crc & 1:
                     crc = (crc >> 1) ^ polynomial
                 else:
-                    crc = (crc >> 1)
+                    crc = crc >> 1
 
         # Invert the bits
         crc = crc ^ 0xFFFFFFFF
