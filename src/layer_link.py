@@ -74,25 +74,23 @@ class EthernetProtocol:
     def calculate_fcs(frame: EthernetFrame) -> int:
         """Calculates the frame check sequence (FCS) for a given frame using 32 bit CRC."""
 
-        # For purposes of computing the checksum, the value of the packet checksum field is zero.
+        # For purposes of computing the fcs the value of the frame fcs field is zero.
+        # Can then get the frame bytes with fcs = 0.
         tmp_fcs = frame.fcs
         frame.fcs = 0
-
-        # Convert the frame to bytes, excluding the FCS field
         frame_bytes = frame.to_bytes()
 
-        # Initialize the 32-bit CRC
+        # perform crc32b calculation
+        # - Data comes in big-endian format
         crc = 0xFFFFFFFF
-
-        # Iterate over each byte
-        # See https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Computation
+        polynomial = 0xEDB88320
         for byte in frame_bytes:
             crc ^= byte
             for _ in range(8):
                 if crc & 1:
-                    crc = (crc >> 1) ^ 0xEDB88320
+                    crc = (crc >> 1) ^ polynomial
                 else:
-                    crc >>= 1
+                    crc = (crc >> 1)
 
         # Invert the bits
         crc = crc ^ 0xFFFFFFFF
