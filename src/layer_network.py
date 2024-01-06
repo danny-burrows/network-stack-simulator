@@ -4,7 +4,7 @@ from enum import IntEnum
 import struct
 
 from logger import Logger
-from layer_link import Interface
+from layer_link import LinkLayerInterface
 
 
 class DNSResourceRecord:
@@ -311,6 +311,7 @@ class IPProtocol:
         bytes = host.split(".")
         return (int(bytes[0]) << 24) + (int(bytes[1]) << 16) + (int(bytes[2]) << 8) + int(bytes[3])
 
+    @staticmethod
     def int_to_ip(host_int: int) -> str:
         # Split the int into its four bytes and concatenate
         return f"{(host_int >> 24) & 0xFF}.{(host_int >> 16) & 0xFF}.{(host_int >> 8) & 0xFF}.{host_int & 0xFF}"
@@ -509,7 +510,7 @@ class RoutingTable:
 class NetworkLayer(Logger):
     dns_server: DNSServer
     routing_table: RoutingTable
-    interfaces: dict[str, Interface]
+    interfaces: dict[str, LinkLayerInterface]
 
     @property
     def local_ip(self) -> str:
@@ -525,17 +526,17 @@ class NetworkLayer(Logger):
         self._add_interface("eth0")
 
     def _add_interface(self, name: str):
-        self.interfaces[name] = Interface(name)
+        self.interfaces[name] = LinkLayerInterface(name)
 
     def plug_in_and_perform_dhcp_discovery(self, is_client: bool = False) -> None:
         # Exam specified IP Range (CIDR): 192.168.1.0/8 == (192.0.0.0/8)
-        subnet_ip = "192.0.0.0"
-        subnet_mask = "255.0.0.0"
-        server_ip = "192.168.0.6"
-        client_ip = "192.168.0.4"
+        SUBNET_IP = "192.0.0.0"
+        SUBNET_MASK = "255.0.0.0"
+        SERVER_IP_ADDRESS = "192.168.0.6"
+        CLIENT_IP_ADDRESS = "192.168.0.4"
 
-        # TODO: Hardcode Interface MAC Address
-        # TODO: Hardcode populate Interface ARP table
+        # Simulates plugging in the physical cables and performing ARP discovery to find the MAC address of the other host
+        self.interfaces["eth0"].plug_in_and_perform_arp_discovery(is_client)
 
         # Function to generate an IP in range specified by exam spec
         # def generate_ip_in_range() -> str:
@@ -550,15 +551,15 @@ class NetworkLayer(Logger):
         self.logger.debug(f"Discovered default gateway '{default_gateway_ip}'")
 
         # Add default gateway to routing table
-        self.routing_table.add_route("0.0.0.0", default_gateway_ip, subnet_mask, "UG", 600, "eth0")
+        self.routing_table.add_route("0.0.0.0", default_gateway_ip, SUBNET_MASK, "UG", 600, "eth0")
 
         # Add local subnet to routing table
-        self.routing_table.add_route(subnet_ip, "0.0.0.0", subnet_mask, "U", 600, "eth0")
+        self.routing_table.add_route(SUBNET_IP, "0.0.0.0", SUBNET_MASK, "U", 600, "eth0")
 
         # In a real scenario the DHCP server would be found using various methods and
         # the DHCP server would assign an IP address to the client.
         # For our simulation we hardcode it based on whether client or server.
-        eth0_ip = client_ip if is_client else server_ip
+        eth0_ip = CLIENT_IP_ADDRESS if is_client else SERVER_IP_ADDRESS
         self.logger.debug(f"Discovered IP address '{eth0_ip}' for interface eth0")
 
         # Bind interface to discovered IP
@@ -568,7 +569,7 @@ class NetworkLayer(Logger):
         # In a real scenario the DNS server would be found using various methods and
         # the DNS server would be populated with records.
         if is_client:
-            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, server_ip))
+            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, SERVER_IP_ADDRESS))
             self.dns_server.add_record(DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"))
             self.dns_server.add_record(DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"))
 
@@ -603,7 +604,7 @@ class NetworkLayer(Logger):
                 break
 
         # Receive message from the interface
-        data = interface.link.receive()
+        data = interface.receive()
         self.logger.debug("⬆️ [Link->Network]")
 
         packet = IPProtocol.parse_ip_packet(data)
