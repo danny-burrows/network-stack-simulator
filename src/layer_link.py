@@ -81,10 +81,11 @@ class EthernetProtocol:
         # Convert the frame to bytes, excluding the FCS field
         frame_bytes = frame.to_bytes()
 
-        # Initialize the CRC
+        # Initialize the 32-bit CRC
         crc = 0xFFFFFFFF
 
         # Iterate over each byte
+        # See https://en.wikipedia.org/wiki/Cyclic_redundancy_check#Computation
         for byte in frame_bytes:
             crc ^= byte
             for _ in range(8):
