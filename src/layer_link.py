@@ -80,7 +80,7 @@ class EthernetProtocol:
         frame.fcs = 0
         frame_bytes = frame.to_bytes()
 
-        # perform crc32b calculation
+        # perform crc 32 calculation
         # - Data comes in big-endian format
         crc = 0xFFFFFFFF
         polynomial = 0xEDB88320
