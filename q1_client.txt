@@ -1,0 +1,1142 @@
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408520|0|6|000010|65535|36039|0|['kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6']|b''
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408520 (rel=0)
+	  |- ack_number: 0 (rel=0)
+	  |- data_offset: 6
+	  |- flags: 000010 (SYN)
+	  |- window: 65535
+	  |- checksum: 36039
+	  |- urgent_pointer: 0
+	  |- options: 
+	     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|44|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 44
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6\xd7Z\xab\xf6'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'|3613043702
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x88\x00\x00\x00\x00`\x02\xff\xff\x8c\xc7\x00\x00\x02\x04\x02\xc6'
+			  |- fcs: 3613043702
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00,\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6l\n\x1fM'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'|1812602701
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'
+			  |- fcs: 1812602701
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|44|0|010|0|64|6|50457|3232235526|3232235524|[]|b'\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 44
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xc3\x83^\x9c\xe5\xa4T\x9at\x89`\x12\xff\xffHv\x00\x00\x02\x04\x02\xc6'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|50051|1587340708|1419408521|6|010010|65535|18550|0|['kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6']|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 50051
+	  |- seq_number: 1587340708 (rel=0)
+	  |- ack_number: 1419408521 (rel=1)
+	  |- data_offset: 6
+	  |- flags: 010010 (ACK, SYN)
+	  |- window: 65535
+	  |- checksum: 18550
+	  |- urgent_pointer: 0
+	  |- options: 
+	     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408521|1587340709|5|010000|65535|23877|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408521 (rel=1)
+	  |- ack_number: 1587340709 (rel=1)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 23877
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00A\xa1\x0c\x8f'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'|1101073551
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x10\xff\xff]E\x00\x00'
+			  |- fcs: 1101073551
+			---------- END Link Layer Frame ----------
+------------ SENDING Application Layer Message ----
+RAW DATA: b'GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+PROTOCOL: HTTP
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET /ring.txt HTTP/1.1
+  | host: https://www.gollum.mordor
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- uri: /ring.txt
+  |- version: HTTP/1.1
+  |- headers: {'host': 'https://www.gollum.mordor'}
+  |- body: <None>
+---------- END Application Layer Message ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408521|1587340709|5|011000|65535|14766|0|[]|b'GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408521 (rel=1)
+	  |- ack_number: 1587340709 (rel=1)
+	  |- data_offset: 5
+	  |- flags: 011000 (ACK, PSH)
+	  |- window: 65535
+	  |- checksum: 14766
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b'GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00`\x00\x00@\x00@\x06\xc5"\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|96|0|010|0|64|6|50466|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 96
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50466
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00`\x00\x00@\x00@\x06\xc5"\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n\xcdj\xbf\xb9'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00`\x00\x00@\x00@\x06\xc5"\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'|3446325177
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00`\x00\x00@\x00@\x06\xc5"\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\x89^\x9c\xe5\xa5P\x18\xff\xff9\xae\x00\x00GET /ring.txt HTTP/1.1\nhost: https://www.gollum.mordor\n\n'
+			  |- fcs: 3446325177
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00U\xb2\xb7"'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'|1437775650
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'
+			  |- fcs: 1437775650
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235526|3232235524|[]|b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x10\xff\xff]\r\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|50051|1587340709|1419408577|5|010000|65535|23821|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 50051
+	  |- seq_number: 1587340709 (rel=1)
+	  |- ack_number: 1419408577 (rel=57)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 23821
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00@\x00\x00@\x00@\x06\xc5\x1c\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\nt\xc1Q`'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00@\x00\x00@\x00@\x06\xc5\x1c\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'|1958826336
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00@\x00\x00@\x00@\x06\xc5\x1c\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'
+			  |- fcs: 1958826336
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00@\x00\x00@\x00@\x06\xc5\x1c\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|64|0|010|0|64|6|50460|3232235526|3232235524|[]|b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 64
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50460
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xc3\x83^\x9c\xe5\xa5T\x9at\xc1P\x18\xff\xff\x88\x96\x00\x00HTTP/1.1 303 See Other\n\n'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|50051|1587340709|1419408577|5|011000|65535|34966|0|[]|b'HTTP/1.1 303 See Other\n\n'
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 50051
+	  |- seq_number: 1587340709 (rel=1)
+	  |- ack_number: 1419408577 (rel=57)
+	  |- data_offset: 5
+	  |- flags: 011000 (ACK, PSH)
+	  |- window: 65535
+	  |- checksum: 34966
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b'HTTP/1.1 303 See Other\n\n'
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408577|1587340733|5|010000|65535|23797|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408577 (rel=57)
+	  |- ack_number: 1587340733 (rel=25)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 23797
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00\xf8,\x1cl'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'|4163640428
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x10\xff\xff\\\xf5\x00\x00'
+			  |- fcs: 4163640428
+			---------- END Link Layer Frame ----------
+------------ RECEIVED Application Layer Message ---
+RAW DATA: b'HTTP/1.1 303 See Other\n\n'
+PROTOCOL: HTTP
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 303 See Other
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 303
+  |- headers: <None>
+  |- body: <None>
+---------- END Application Layer Message ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408577|1587340733|5|000001|65535|23812|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408577 (rel=57)
+	  |- ack_number: 1587340733 (rel=25)
+	  |- data_offset: 5
+	  |- flags: 000001 (FIN)
+	  |- window: 65535
+	  |- checksum: 23812
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00\x99\xf76\x94'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'|2583115412
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc1^\x9c\xe5\xbdP\x01\xff\xff]\x04\x00\x00'
+			  |- fcs: 2583115412
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00$ur\x9b'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'|611676827
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'
+			  |- fcs: 611676827
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235526|3232235524|[]|b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x10\xff\xff\\\xf4\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|50051|1587340733|1419408578|5|010000|65535|23796|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 50051
+	  |- seq_number: 1587340733 (rel=25)
+	  |- ack_number: 1419408578 (rel=58)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 23796
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00&~mY'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'|645819737
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'
+			  |- fcs: 645819737
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235526|3232235524|[]|b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xc3\x83^\x9c\xe5\xbdT\x9at\xc2P\x01\xff\xff]\x03\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|50051|1587340733|1419408578|5|000001|65535|23811|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 50051
+	  |- seq_number: 1587340733 (rel=25)
+	  |- ack_number: 1419408578 (rel=58)
+	  |- data_offset: 5
+	  |- flags: 000001 (FIN)
+	  |- window: 65535
+	  |- checksum: 23811
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 50051|80|1419408578|1587340734|5|010000|65535|23795|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 50051
+	  |- dest_port: 80
+	  |- seq_number: 1419408578 (rel=58)
+	  |- ack_number: 1587340734 (rel=26)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 23795
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50457|3232235524|3232235526|[]|b'\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50457
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00u\xac\x1e\x1c'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'|1974214172
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x19\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xc3\x83\x00PT\x9at\xc2^\x9c\xe5\xbeP\x10\xff\xff\\\xf3\x00\x00'
+			  |- fcs: 1974214172
+			---------- END Link Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303164|0|6|000010|65535|60369|0|['kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6']|b''
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303164 (rel=0)
+	  |- ack_number: 0 (rel=0)
+	  |- data_offset: 6
+	  |- flags: 000010 (SYN)
+	  |- window: 65535
+	  |- checksum: 60369
+	  |- urgent_pointer: 0
+	  |- options: 
+	     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|44|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 44
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6y\x07\x01\xef'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'|2030502383
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*<\x00\x00\x00\x00`\x02\xff\xff\xeb\xd1\x00\x00\x02\x04\x02\xc6'
+			  |- fcs: 2030502383
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b"\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6#\xdb\xe9\x88"
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b"E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"|601614728
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b"E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"
+			  |- fcs: 601614728
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b"E\x00\x00,\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|44|0|010|0|64|6|50456|3232235526|3232235524|[]|b"\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 44
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b"\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b"\x00P\xd7\x02\x02\xb7\xce\xe2,]*=`\x12\xff\xff\x1a'\x00\x00\x02\x04\x02\xc6"
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|55042|45600482|744303165|6|010010|65535|6695|0|['kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6']|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 55042
+	  |- seq_number: 45600482 (rel=0)
+	  |- ack_number: 744303165 (rel=1)
+	  |- data_offset: 6
+	  |- flags: 010010 (ACK, SYN)
+	  |- window: 65535
+	  |- checksum: 6695
+	  |- urgent_pointer: 0
+	  |- options: 
+	     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x02c6
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303165|45600483|5|010000|65535|12022|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303165 (rel=1)
+	  |- ack_number: 45600483 (rel=1)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 12022
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00\xd6\xae\xa3\x83'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'|3601769347
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x10\xff\xff.\xf6\x00\x00'
+			  |- fcs: 3601769347
+			---------- END Link Layer Frame ----------
+------------ SENDING Application Layer Message ----
+RAW DATA: b'GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+PROTOCOL: HTTP
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET /wizzard.jpg HTTP/1.1
+  | host: http://rincewind.fourex.disc.atuin
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- uri: /wizzard.jpg
+  |- version: HTTP/1.1
+  |- headers: {'host': 'http://rincewind.fourex.disc.atuin'}
+  |- body: <None>
+---------- END Application Layer Message ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303165|45600483|5|011000|65535|49675|0|[]|b'GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303165 (rel=1)
+	  |- ack_number: 45600483 (rel=1)
+	  |- data_offset: 5
+	  |- flags: 011000 (ACK, PSH)
+	  |- window: 65535
+	  |- checksum: 49675
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b'GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00l\x00\x00@\x00@\x06\xc5$\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|108|0|010|0|64|6|50468|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 108
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50468
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00l\x00\x00@\x00@\x06\xc5$\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n\x08\xdf\xb3\x9b'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00l\x00\x00@\x00@\x06\xc5$\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'|148878235
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00l\x00\x00@\x00@\x06\xc5$\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*=\x02\xb7\xce\xe3P\x18\xff\xff\xc2\x0b\x00\x00GET /wizzard.jpg HTTP/1.1\nhost: http://rincewind.fourex.disc.atuin\n\n'
+			  |- fcs: 148878235
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00\xfd\x10,\xe9'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'|4245695721
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'
+			  |- fcs: 4245695721
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235526|3232235524|[]|b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x10\xff\xff.\xb2\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|55042|45600483|744303233|5|010000|65535|11954|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 55042
+	  |- seq_number: 45600483 (rel=1)
+	  |- ack_number: 744303233 (rel=69)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 11954
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00<\x00\x00@\x00@\x06\xc5\x1b\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n\xfe\xb6>V'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00<\x00\x00@\x00@\x06\xc5\x1b\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'|4273356374
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00<\x00\x00@\x00@\x06\xc5\x1b\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'
+			  |- fcs: 4273356374
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00<\x00\x00@\x00@\x06\xc5\x1b\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|60|0|010|0|64|6|50459|3232235526|3232235524|[]|b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 60
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50459
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xd7\x02\x02\xb7\xce\xe3,]*\x81P\x18\xff\xff\xdc\x02\x00\x00HTTP/1.1 302 Found\n\n'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|55042|45600483|744303233|5|011000|65535|56322|0|[]|b'HTTP/1.1 302 Found\n\n'
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 55042
+	  |- seq_number: 45600483 (rel=1)
+	  |- ack_number: 744303233 (rel=69)
+	  |- data_offset: 5
+	  |- flags: 011000 (ACK, PSH)
+	  |- window: 65535
+	  |- checksum: 56322
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b'HTTP/1.1 302 Found\n\n'
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303233|45600503|5|010000|65535|11934|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303233 (rel=69)
+	  |- ack_number: 45600503 (rel=21)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 11934
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00\x0c/es'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'|204432755
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x10\xff\xff.\x9e\x00\x00'
+			  |- fcs: 204432755
+			---------- END Link Layer Frame ----------
+------------ RECEIVED Application Layer Message ---
+RAW DATA: b'HTTP/1.1 302 Found\n\n'
+PROTOCOL: HTTP
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 302 Found
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 302
+  |- headers: <None>
+  |- body: <None>
+---------- END Application Layer Message ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303233|45600503|5|000001|65535|11949|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303233 (rel=69)
+	  |- ack_number: 45600503 (rel=21)
+	  |- data_offset: 5
+	  |- flags: 000001 (FIN)
+	  |- window: 65535
+	  |- checksum: 11949
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00\xfa\xdc\xc1\xb7'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'|4208771511
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x81\x02\xb7\xce\xf7P\x01\xff\xff.\xad\x00\x00'
+			  |- fcs: 4208771511
+			---------- END Link Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00\x1dv\xb7\xe0'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'|494319584
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'
+			  |- fcs: 494319584
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235526|3232235524|[]|b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x10\xff\xff.\x9d\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|55042|45600503|744303234|5|010000|65535|11933|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 55042
+	  |- seq_number: 45600503 (rel=21)
+	  |- ack_number: 744303234 (rel=70)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 11933
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+			------------ RECEIVED Link Layer Frame ----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x01\x00\x00\x02\x00\x00\x00\x00\x00\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00|\x1a\x02\r'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255553|2199023255552|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'|2082079245
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- source_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'
+			  |- fcs: 2082079245
+			---------- END Link Layer Frame ----------
+		------------ RECEIVED Network Layer Packet ----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x06\xc0\xa8\x00\x04\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235526|3232235524|[]|b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235526 (192.168.0.6)
+		  |- destination_address: 3232235524 (192.168.0.4)
+		  |- options: []
+		  |- data: b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'
+		---------- END Network Layer Packet ----------
+	------------ RECEIVED Transport Layer Frame ----
+	RAW DATA: b'\x00P\xd7\x02\x02\xb7\xce\xf7,]*\x82P\x01\xff\xff.\xac\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 80|55042|45600503|744303234|5|000001|65535|11948|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 80
+	  |- dest_port: 55042
+	  |- seq_number: 45600503 (rel=21)
+	  |- ack_number: 744303234 (rel=70)
+	  |- data_offset: 5
+	  |- flags: 000001 (FIN)
+	  |- window: 65535
+	  |- checksum: 11948
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+	------------ SENDING Transport Layer Frame -----
+	RAW DATA: b'\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'
+	PROTOCOL: TCP
+	SEGMENT STRING: 55042|80|744303234|45600504|5|010000|65535|11932|0|[]|b''
+	SEGMENT FIELDS:
+	  |- src_port: 55042
+	  |- dest_port: 80
+	  |- seq_number: 744303234 (rel=70)
+	  |- ack_number: 45600504 (rel=22)
+	  |- data_offset: 5
+	  |- flags: 010000 (ACK)
+	  |- window: 65535
+	  |- checksum: 11932
+	  |- urgent_pointer: 0
+	  |- options: []
+	  |- data: b''
+	---------- END Transport Layer Frame ----------
+		------------ SENDING Network Layer Packet -----
+		RAW DATA: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'
+		PROTOCOL: IP
+		PACKET STRING: 4|5|0|40|0|010|0|64|6|50456|3232235524|3232235526|[]|b'\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'
+		PACKET FIELDS:
+		  |- version: 4 (IPv4)
+		  |- ihl: 5
+		  |- type_of_service: 0
+		  |- total_length: 40
+		  |- identification: 0
+		  |- flags: 010 (DONT_FRAGMENT)
+		  |- fragment_offset: 0
+		  |- time_to_live: 64
+		  |- protocol: 6 (TCP)
+		  |- header_checksum: 50456
+		  |- source_address: 3232235524 (192.168.0.4)
+		  |- destination_address: 3232235526 (192.168.0.6)
+		  |- options: []
+		  |- data: b'\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'
+		---------- END Network Layer Packet ----------
+			------------ SENDING Link Layer Frame -----
+			RAW DATA: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab\x00\x00\x02\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x01\x08\x00E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00\xefZ\xfa\xeb'
+			PROTOCOL: Ethernet
+			FRAME STRING: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'|2199023255552|2199023255553|2048|b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'|4015717099
+			FRAME FIELDS:
+			  |- preamble: b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xab'
+			  |- destination_mac: 2199023255552 (02:00:00:00:00:00)
+			  |- source_mac: 2199023255553 (02:00:00:00:00:01)
+			  |- ether_type: 2048 (IPv4)
+			  |- data: b'E\x00\x00(\x00\x00@\x00@\x06\xc5\x18\xc0\xa8\x00\x04\xc0\xa8\x00\x06\xd7\x02\x00P,]*\x82\x02\xb7\xce\xf8P\x10\xff\xff.\x9c\x00\x00'
+			  |- fcs: 4015717099
+			---------- END Link Layer Frame ----------
