@@ -61,6 +61,9 @@ class PhysicalLayer:
 
 
 class IPProtocol:
+    src_ip: str
+    dest_ip: str
+
     @staticmethod
     def ip_to_int(host: str) -> int:
         # Split the IP address into its four bytes and concatenate
@@ -561,31 +564,16 @@ class TCPIPSocket:
     def __init__(self, transport: TransportLayer) -> None:
         self.transport = transport
 
-    def _resolve_ip_from_host(self, host: str) -> str:
-        """Resolve an IP address from a host.
-        A host could be a hostname in domain notation or an IPv4 address.
-        """
-        host = host.lstrip("https://").lstrip("http://")
-
-        # Host is local IP address.
-        if host == "localhost" or host == "0.0.0.0":
-            return self.transport.physical.local_ip
-
-        # Host is already an IP address.
-        if host.count(".") == 3 and all(s.isdigit() for s in host.split(".")):
-            return host
-
     def connect(self, addr: tuple(str, int)) -> None:
         # Configure socket with bound ip.
-        self.bound_src_ip = self._resolve_ip_from_host("0.0.0.0")
+        self.bound_src_ip = IPProtocol.src_ip
 
         # Assign a random dynamic port for the client to use.
         # Dynamic ports are in the range 49152 to 65535.
         self.bound_src_port = random.randint(49152, 65535)
 
         # Calculate destination ip and port from addr.
-        dest_host, dest_port = addr
-        dest_ip = self._resolve_ip_from_host(dest_host)
+        dest_ip, dest_port = addr
 
         # Tell transport layer to perform active open procedure.
         self.tcb = self.transport.active_open_connection(self.bound_src_ip, self.bound_src_port, dest_ip, dest_port)
@@ -594,9 +582,7 @@ class TCPIPSocket:
         # Passive open procedure prerequisite.
 
         # Calculate destination ip and port from addr then configure.
-        host, port = addr
-        ip = self._resolve_ip_from_host(host)
-        self.bound_src_ip, self.bound_src_port = (ip, port)
+        self.bound_src_ip, self.bound_src_port = addr
 
     def accept(self) -> None:
         # Step 1 and 2 of passive open procedure.
@@ -1053,7 +1039,8 @@ class TransportLayer:
 
         # Receive and parse the latest segment.
         # Guaranteed to be fully received due if communicated MSS.
-        segment_data, segment_src_ip = self.physical.receive()
+        segment_data = self.physical.receive()
+        segment_src_ip = IPProtocol.dest_ip
         segment = TCPProtocol.parse_tcp_segment(segment_data)
         print(TCPProtocol.get_exam_string(segment, tcb.irs, tcb.iss, note="RECEIVED"))
 
@@ -1310,14 +1297,14 @@ class ApplicationLayer:
         self.transport = TransportLayer()
 
     def execute_client(self) -> None:
-        # Plugin and setup network layer
-        self.transport.physical.plug_in_and_perform_dhcp_discovery(True)
+        IPProtocol.src_ip = "192.168.0.4"
+        IPProtocol.dest_ip = "192.168.0.6"
 
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
 
         # Active open socket and connect to server ip:80
-        addr = hostname, _port = "https://www.gollum.mordor", 80
+        addr = hostname, _port = IPProtocol.dest_ip, 80
         sock.connect(addr)
 
         # Send GET request for https://www.gollum.mordor/ring.txt and receive response
@@ -1328,12 +1315,6 @@ class ApplicationLayer:
         res_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
         res = HttpProtocol.parse_response(res_bytes)
         print(HttpProtocol.get_exam_string(res, note="RECEIVED"))
-
-        sock.close()
-
-        # Active open socket and connect to same server through another domain address
-        addr = hostname, _port = "http://rincewind.fourex.disc.atuin", 80
-        sock.connect(addr)
 
         # Send GET request for http://rincewind.fourex.disc.atuin/luggage.jpg and receive response
         req = HttpProtocol.create_request("GET", "/wizzard.jpg", headers={"host": hostname})
@@ -1347,12 +1328,12 @@ class ApplicationLayer:
         sock.close()
 
     def execute_server(self) -> None:
-        # Plugin and setup network layer
-        self.transport.physical.plug_in_and_perform_dhcp_discovery()
+        IPProtocol.src_ip = "192.168.0.6"
+        IPProtocol.dest_ip = "192.168.0.4"
 
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
-        sock.bind(("0.0.0.0", 80))
+        sock.bind((IPProtocol.src_ip, 80))
 
         # Passive open socket and accept connections on local ip:80
         sock.accept()
@@ -1366,11 +1347,6 @@ class ApplicationLayer:
         res = HttpProtocol.create_response(status)
         print(HttpProtocol.get_exam_string(res, note="SENDING"))
         sock.send(res.to_bytes())
-
-        sock.wait_close()
-
-        # Passive open socket again and accept connections on local ip:80
-        sock.accept()
 
         # Receive GET request and send random 300 response
         req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
