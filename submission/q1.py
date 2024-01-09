@@ -204,7 +204,7 @@ class EthernetProtocol:
         note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str))
 
-        message = "\n".join(
+        return "\n".join(
             (
                 f"------------{note_str} Link Layer Frame {note_padding}",
                 f"RAW DATA: {frame.to_bytes()}",
@@ -215,8 +215,6 @@ class EthernetProtocol:
                 "---------- END Link Layer Frame ----------",
             )
         )
-
-        return "\n".join([ "\t" * 3 + l for l in message.split("\n") ])
 
 
 class LinkLayerInterface:
@@ -732,7 +730,7 @@ class IPProtocol:
         note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str))
 
-        message = "\n".join(
+        return "\n".join(
             (
                 f"------------{note_str} Network Layer Packet {note_padding}",
                 f"RAW DATA: {packet.to_bytes()}",
@@ -743,8 +741,6 @@ class IPProtocol:
                 "---------- END Network Layer Packet ----------",
             )
         )
-        
-        return "\n".join([ "\t" * 2 + l for l in message.split("\n") ])
 
 
 @dataclass
@@ -1315,7 +1311,7 @@ class TCPProtocol:
         note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str))
 
-        message = "\n".join(
+        return "\n".join(
             (
                 f"------------{note_str} Transport Layer Frame {note_padding}",
                 f"RAW DATA: {segment.to_bytes()}",
@@ -1326,8 +1322,6 @@ class TCPProtocol:
                 "---------- END Transport Layer Frame ----------",
             )
         )
-
-        return "\n".join([ "\t" * 1 + l for l in message.split("\n") ])
 
 
 class TransportControlBlock:
@@ -2113,7 +2107,7 @@ class HttpProtocol:
         note_str = f" {note}" if note else " BEGIN"
         note_padding = "-" * (len("-------------") - len(note_str) - 1)
 
-        message = "\n".join(
+        return "\n".join(
             (
                 f"------------{note_str} Application Layer Message {note_padding}",
                 f"RAW DATA: {message.to_bytes()}",
@@ -2126,8 +2120,6 @@ class HttpProtocol:
                 "---------- END Application Layer Message ----------",
             )
         )
-
-        return "\n".join([ "\t" * 0 + l for l in message.split("\n") ])
 
 
 class ApplicationLayer:
