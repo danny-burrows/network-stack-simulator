@@ -1296,7 +1296,7 @@ class ApplicationLayer:
     def __init__(self) -> None:
         self.transport = TransportLayer()
 
-    def execute_client(self) -> None:
+    def execute_(self) -> None:
         IPProtocol.src_ip = "192.168.0.4"
         IPProtocol.dest_ip = "192.168.0.6"
 
@@ -1327,47 +1327,6 @@ class ApplicationLayer:
 
         sock.close()
 
-    def execute_server(self) -> None:
-        IPProtocol.src_ip = "192.168.0.6"
-        IPProtocol.dest_ip = "192.168.0.4"
-
-        # Initialize mock TCP socket that holds a config and talks to self.transport
-        sock = self.transport.create_socket()
-        sock.bind((IPProtocol.src_ip, 80))
-
-        # Passive open socket and accept connections on local ip:80
-        sock.accept()
-
-        # Receive HEAD request and send random 300 response
-        req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        sock.send(res.to_bytes())
-
-        # Receive GET request and send random 300 response
-        req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        sock.send(res.to_bytes())
-
-        sock.wait_close()
-
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 q1.py [client|server]")
-        exit(1)
-
-    if sys.argv[1] == "client":
-        ApplicationLayer().execute_client()
-
-    elif sys.argv[1] == "server":
-        ApplicationLayer().execute_server()
+    ApplicationLayer().execute_()

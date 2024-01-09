@@ -610,12 +610,12 @@ class NetworkLayer:
     def _add_interface(self, name: str):
         self.interfaces[name] = Interface(name)
 
-    def plug_in_and_perform_dhcp_discovery(self, is_client: bool = False) -> None:
+    def plug_in_and_perform_dhcp_discovery(self) -> None:
         # Exam specified IP Range (CIDR): 192.168.1.0/8 == (192.0.0.0/8)
         SUBNET_IP = "192.0.0.0"
         SUBNET_MASK = "255.0.0.0"
-        SERVER_IP_ADDRESS = "192.168.0.6"
         CLIENT_IP_ADDRESS = "192.168.0.4"
+        SERVER_IP_ADDRESS = "192.168.0.6"
 
         # Function to generate an IP in range specified by exam spec
         # def generate_ip_in_range() -> str:
@@ -637,7 +637,7 @@ class NetworkLayer:
         # In a real scenario the DHCP server would be found using various methods and
         # the DHCP server would assign an IP address to the client.
         # For our simulation we hardcode it based on whether client or server.
-        eth0_ip = CLIENT_IP_ADDRESS if is_client else SERVER_IP_ADDRESS
+        eth0_ip = CLIENT_IP_ADDRESS
 
         # Bind interface to discovered IP
         self.interfaces["eth0"].bind(eth0_ip)
@@ -645,10 +645,9 @@ class NetworkLayer:
         # For our simulation we need to populate the DNS server with records manually.
         # In a real scenario the DNS server would be found using various methods and
         # the DNS server would be populated with records.
-        if is_client:
-            self.dns_server.add_record(DNSARecord("gollum.mordor", 60, SERVER_IP_ADDRESS))
-            self.dns_server.add_record(DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"))
-            self.dns_server.add_record(DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"))
+        self.dns_server.add_record(DNSARecord("gollum.mordor", 60, SERVER_IP_ADDRESS))
+        self.dns_server.add_record(DNSCNAMERecord("www.gollum.mordor", 60, "gollum.mordor"))
+        self.dns_server.add_record(DNSCNAMERecord("rincewind.fourex.disc.atuin", 60, "gollum.mordor"))
 
     def send(self, dest_ip: str, data: bytes) -> None:
         # Resolve the route for dest IP
@@ -1944,9 +1943,9 @@ class ApplicationLayer:
     def __init__(self) -> None:
         self.transport = TransportLayer()
 
-    def execute_client(self) -> None:
+    def execute(self) -> None:
         # Plugin and setup network layer
-        self.transport.network.plug_in_and_perform_dhcp_discovery(True)
+        self.transport.network.plug_in_and_perform_dhcp_discovery()
 
         # Initialize mock TCP socket that holds a config and talks to self.transport
         sock = self.transport.create_socket()
@@ -1981,52 +1980,5 @@ class ApplicationLayer:
 
         sock.close()
 
-    def execute_server(self) -> None:
-        # Plugin and setup network layer
-        self.transport.network.plug_in_and_perform_dhcp_discovery()
-
-        # Initialize mock TCP socket that holds a config and talks to self.transport
-        sock = self.transport.create_socket()
-        sock.bind(("0.0.0.0", 80))
-
-        # Passive open socket and accept connections on local ip:80
-        sock.accept()
-
-        # Receive HEAD request and send random 300 response
-        req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        sock.send(res.to_bytes())
-
-        sock.wait_close()
-
-        # Passive open socket again and accept connections on local ip:80
-        sock.accept()
-
-        # Receive GET request and send random 300 response
-        req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        sock.send(res.to_bytes())
-
-        sock.wait_close()
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 q1.py [client|server]")
-        exit(1)
-
-    if sys.argv[1] == "client":
-        ApplicationLayer().execute_client()
-
-    elif sys.argv[1] == "server":
-        ApplicationLayer().execute_server()
+    ApplicationLayer().execute()

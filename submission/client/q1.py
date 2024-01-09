@@ -279,9 +279,9 @@ class ApplicationLayer:
     def __init__(self) -> None:
         self.physical = PhysicalLayer()
 
-    def execute_client(self) -> None:
-        # Send GET request for https://www.gollum.mordor/ring.txt and receive response
-        req = HttpProtocol.create_request("GET", "/ring.txt", headers={"host": "192.168.0.4"})
+    def execute(self) -> None:
+        # Send GET request for / and receive response
+        req = HttpProtocol.create_request("GET", "/", headers={"host": "192.168.0.4"})
         print(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.physical.send(req.to_bytes())
 
@@ -289,44 +289,15 @@ class ApplicationLayer:
         res = HttpProtocol.parse_response(res_bytes)
         print(HttpProtocol.get_exam_string(res, note="RECEIVED"))
 
-        # Send GET request for http://rincewind.fourex.disc.atuin/luggage.jpg and receive response
-        req = HttpProtocol.create_request("GET", "/wizzard.jpg", headers={"host": "192.168.0.4"})
+        # Send HEAD request for / and receive response
+        req = HttpProtocol.create_request("HEAD", "/", headers={"host": "192.168.0.4"})
         print(HttpProtocol.get_exam_string(req, note="SENDING"))
         self.physical.send(req.to_bytes())
 
         res_bytes = self.physical.receive()
         res = HttpProtocol.parse_response(res_bytes)
         print(HttpProtocol.get_exam_string(res, note="RECEIVED"))
-
-    def execute_server(self) -> None:
-        # Receive HEAD request and send random 300 response
-        req_bytes = self.physical.receive()
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        self.physical.send(res.to_bytes())
-
-        # Receive GET request and send random 300 response
-        req_bytes = self.physical.receive()
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
-
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
-        self.physical.send(res.to_bytes())
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python3 q1.py [client|server]")
-        exit(1)
-
-    if sys.argv[1] == "client":
-        ApplicationLayer().execute_client()
-
-    elif sys.argv[1] == "server":
-        ApplicationLayer().execute_server()
+    ApplicationLayer().execute()

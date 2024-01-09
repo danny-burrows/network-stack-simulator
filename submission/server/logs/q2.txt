@@ -1,0 +1,317 @@
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3cbe000000006002ffffc0500000020401f4
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791614|0|6|000010|65535|49232|0|[kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x01f4]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791614 (rel=0)
+  |- ack_number: 0 (rel=0)
+  |- data_offset: 6
+  |- flags: 000010 (SYN)
+  |- window: 65535
+  |- checksum: 49232
+  |- urgent_pointer: 0
+  |- options: 
+     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x01f4
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e265cac3cbf6012ffff58490000020401f4
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186470|1554791615|6|010010|65535|22601|0|[kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x01f4]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186470 (rel=0)
+  |- ack_number: 1554791615 (rel=1)
+  |- data_offset: 6
+  |- flags: 010010 (ACK, SYN)
+  |- window: 65535
+  |- checksum: 22601
+  |- urgent_pointer: 0
+  |- options: 
+     |- kind=MAXIMUM_SEGMENT_SIZE len=4 data=0x01f4
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3cbff9d06e275010ffff6c460000
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791615|4191186471|5|010000|65535|27718|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791615 (rel=1)
+  |- ack_number: 4191186471 (rel=1)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27718
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3cbff9d06e275018ffffdbb20000474554202f72696e672e74787420485454502f312e310a686f73743a203139322e3136382e302e360a0a
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791615|4191186471|5|011000|65535|56242|0|[]|0x474554202f72696e672e74787420485454502f312e310a686f73743a203139322e3136382e302e360a0a
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791615 (rel=1)
+  |- ack_number: 4191186471 (rel=1)
+  |- data_offset: 5
+  |- flags: 011000 (ACK, PSH)
+  |- window: 65535
+  |- checksum: 56242
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: 0x474554202f72696e672e74787420485454502f312e310a686f73743a203139322e3136382e302e360a0a
+---------- END Transport Layer Frame ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e275cac3ce95010ffff6c1c0000
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186471|1554791657|5|010000|65535|27676|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186471 (rel=1)
+  |- ack_number: 1554791657 (rel=43)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27676
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Application Layer Message ---
+RAW DATA: 0x474554202f72696e672e74787420485454502f312e310a686f73743a203139322e3136382e302e360a0a
+PROTOCOL: HTTP
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET /ring.txt HTTP/1.1
+  | host: 192.168.0.6
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- uri: /ring.txt
+  |- version: HTTP/1.1
+  |- headers: {'host': '192.168.0.6'}
+  |- body: <NONE>
+---------- END Application Layer Message ----------
+------------ SENDING Application Layer Message ----
+RAW DATA: 0x485454502f312e3120333030204d756c7469706c652043686f696365730a0a
+PROTOCOL: HTTP
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 300 Multiple Choices
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 300
+  |- headers: <NONE>
+  |- body: <NONE>
+---------- END Application Layer Message ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e275cac3ce95018ffffae9e0000485454502f312e3120333030204d756c7469706c652043686f696365730a0a
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186471|1554791657|5|011000|65535|44702|0|[]|0x485454502f312e3120333030204d756c7469706c652043686f696365730a0a
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186471 (rel=1)
+  |- ack_number: 1554791657 (rel=43)
+  |- data_offset: 5
+  |- flags: 011000 (ACK, PSH)
+  |- window: 65535
+  |- checksum: 44702
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: 0x485454502f312e3120333030204d756c7469706c652043686f696365730a0a
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3ce9f9d06e465010ffff6bfd0000
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791657|4191186502|5|010000|65535|27645|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791657 (rel=43)
+  |- ack_number: 4191186502 (rel=32)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27645
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3ce9f9d06e465018ffff31d30000474554202f77697a7a6172642e6a706720485454502f312e310a686f73743a203139322e3136382e302e360a0a
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791657|4191186502|5|011000|65535|12755|0|[]|0x474554202f77697a7a6172642e6a706720485454502f312e310a686f73743a203139322e3136382e302e360a0a
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791657 (rel=43)
+  |- ack_number: 4191186502 (rel=32)
+  |- data_offset: 5
+  |- flags: 011000 (ACK, PSH)
+  |- window: 65535
+  |- checksum: 12755
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: 0x474554202f77697a7a6172642e6a706720485454502f312e310a686f73743a203139322e3136382e302e360a0a
+---------- END Transport Layer Frame ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e465cac3d165010ffff6bd00000
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186502|1554791702|5|010000|65535|27600|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186502 (rel=32)
+  |- ack_number: 1554791702 (rel=88)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27600
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Application Layer Message ---
+RAW DATA: 0x474554202f77697a7a6172642e6a706720485454502f312e310a686f73743a203139322e3136382e302e360a0a
+PROTOCOL: HTTP
+MESSAGE TYPE: request
+MESSAGE STRING:
+  | GET /wizzard.jpg HTTP/1.1
+  | host: 192.168.0.6
+  | 
+  | 
+FIELDS:
+  |- method: GET
+  |- uri: /wizzard.jpg
+  |- version: HTTP/1.1
+  |- headers: {'host': '192.168.0.6'}
+  |- body: <NONE>
+---------- END Application Layer Message ----------
+------------ SENDING Application Layer Message ----
+RAW DATA: 0x485454502f312e312033303220466f756e640a0a
+PROTOCOL: HTTP
+MESSAGE TYPE: response
+MESSAGE STRING:
+  | HTTP/1.1 302 Found
+  | 
+  | 
+FIELDS:
+  |- version: HTTP/1.1
+  |- status_code: 302
+  |- headers: <NONE>
+  |- body: <NONE>
+---------- END Application Layer Message ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e465cac3d165018ffff19200000485454502f312e312033303220466f756e640a0a
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186502|1554791702|5|011000|65535|6432|0|[]|0x485454502f312e312033303220466f756e640a0a
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186502 (rel=32)
+  |- ack_number: 1554791702 (rel=88)
+  |- data_offset: 5
+  |- flags: 011000 (ACK, PSH)
+  |- window: 65535
+  |- checksum: 6432
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: 0x485454502f312e312033303220466f756e640a0a
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3d16f9d06e5a5010ffff6bbc0000
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791702|4191186522|5|010000|65535|27580|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791702 (rel=88)
+  |- ack_number: 4191186522 (rel=52)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27580
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3d16f9d06e5a5001ffff6bcb0000
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791702|4191186522|5|000001|65535|27595|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791702 (rel=88)
+  |- ack_number: 4191186522 (rel=52)
+  |- data_offset: 5
+  |- flags: 000001 (FIN)
+  |- window: 65535
+  |- checksum: 27595
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e5a5cac3d175010ffff6bbb0000
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186522|1554791703|5|010000|65535|27579|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186522 (rel=52)
+  |- ack_number: 1554791703 (rel=89)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27579
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ SENDING Transport Layer Segment -----
+RAW DATA: 0x0050c084f9d06e5a5cac3d175001ffff6bca0000
+PROTOCOL: TCP
+SEGMENT STRING: 80|49284|4191186522|1554791703|5|000001|65535|27594|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 80
+  |- dest_port: 49284
+  |- seq_number: 4191186522 (rel=52)
+  |- ack_number: 1554791703 (rel=89)
+  |- data_offset: 5
+  |- flags: 000001 (FIN)
+  |- window: 65535
+  |- checksum: 27594
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
+------------ RECEIVED Transport Layer Segment ----
+RAW DATA: 0xc08400505cac3d17f9d06e5b5010ffff6bba0000
+PROTOCOL: TCP
+SEGMENT STRING: 49284|80|1554791703|4191186523|5|010000|65535|27578|0|[]|<NONE>
+SEGMENT FIELDS:
+  |- src_port: 49284
+  |- dest_port: 80
+  |- seq_number: 1554791703 (rel=89)
+  |- ack_number: 4191186523 (rel=53)
+  |- data_offset: 5
+  |- flags: 010000 (ACK)
+  |- window: 65535
+  |- checksum: 27578
+  |- urgent_pointer: 0
+  |- options: []
+  |- data: <NONE>
+---------- END Transport Layer Frame ----------
