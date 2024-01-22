@@ -1075,7 +1075,7 @@ class TransportLayer:
 # --------------------------------
 
 
-class HttpProtocol:
+class HTTPProtocol:
     """This class represents a HTTP simulation based on RFC 2616.
 
     The class itself allows for parsing and creating HTTP Messages (Requests and Responses).
@@ -1118,10 +1118,10 @@ class HttpProtocol:
         body: str
 
         def to_string(self) -> str:
-            req_str = f"{self.method}{HttpProtocol.SP}{self.uri}{HttpProtocol.SP}{self.version}{HttpProtocol.CRLF}"
+            req_str = f"{self.method}{HTTPProtocol.SP}{self.uri}{HTTPProtocol.SP}{self.version}{HTTPProtocol.CRLF}"
             for header in self.headers:
-                req_str += f"{header}:{HttpProtocol.SP}{self.headers[header]}{HttpProtocol.CRLF}"
-            req_str += HttpProtocol.CRLF
+                req_str += f"{header}:{HTTPProtocol.SP}{self.headers[header]}{HTTPProtocol.CRLF}"
+            req_str += HTTPProtocol.CRLF
             req_str += self.body
 
             return req_str
@@ -1137,11 +1137,11 @@ class HttpProtocol:
         body: str
 
         def to_string(self) -> str:
-            phrase = HttpProtocol.STATUS_PHRASES[self.status_code]
-            res_str = f"{self.version}{HttpProtocol.SP}{self.status_code}{HttpProtocol.SP}{phrase}{HttpProtocol.CRLF}"
+            phrase = HTTPProtocol.STATUS_PHRASES[self.status_code]
+            res_str = f"{self.version}{HTTPProtocol.SP}{self.status_code}{HTTPProtocol.SP}{phrase}{HTTPProtocol.CRLF}"
             for header in self.headers:
-                res_str += f"{header}:{HttpProtocol.SP}{self.headers[header]}{HttpProtocol.CRLF}"
-            res_str += HttpProtocol.CRLF
+                res_str += f"{header}:{HTTPProtocol.SP}{self.headers[header]}{HTTPProtocol.CRLF}"
+            res_str += HTTPProtocol.CRLF
             res_str += self.body
 
             return res_str
@@ -1155,9 +1155,9 @@ class HttpProtocol:
         # Some steps are taken to ensure correctness of the req_bytes
         # according to the specification.
 
-        start, headers, body = HttpProtocol._parse_message(req_bytes)
+        start, headers, body = HTTPProtocol._parse_message(req_bytes)
 
-        start_elements = start.split(HttpProtocol.SP)
+        start_elements = start.split(HTTPProtocol.SP)
         if len(start_elements) != 3:
             raise ValueError(
                 f"HTTP Request Parse Error: Invalid start line of length '{len(start_elements)}': {req_bytes}!"
@@ -1165,13 +1165,13 @@ class HttpProtocol:
 
         method, uri, version = start_elements
 
-        if method not in HttpProtocol.VALID_METHODS:
+        if method not in HTTPProtocol.VALID_METHODS:
             raise ValueError(f"HTTP Request Parse Error: Unsupported method '{method}': {req_bytes}!")
 
-        if version != HttpProtocol.VERSION:
+        if version != HTTPProtocol.VERSION:
             raise ValueError(f"HTTP Request Parse Error: Unsupported version '{version}': {req_bytes}!")
 
-        return HttpProtocol.HTTPRequestStruct(method, uri, version, headers, body)
+        return HTTPProtocol.HTTPRequestStruct(method, uri, version, headers, body)
 
     @staticmethod
     def parse_response(res_bytes: bytes) -> HTTPResponseStruct:
@@ -1179,9 +1179,9 @@ class HttpProtocol:
         # Some steps are taken to ensure correctness of the res_bytes
         # according to the specification.
 
-        start, headers, body = HttpProtocol._parse_message(res_bytes)
+        start, headers, body = HTTPProtocol._parse_message(res_bytes)
 
-        start_elements = start.split(HttpProtocol.SP)
+        start_elements = start.split(HTTPProtocol.SP)
         if len(start_elements) < 3:
             raise ValueError(
                 f"HTTP Response Parse Error: Invalid start line of length '{len(start_elements)}': {res_bytes}!"
@@ -1189,18 +1189,18 @@ class HttpProtocol:
 
         version, status_code, status_msg = start_elements[0], start_elements[1], " ".join(start_elements[2:])
 
-        if version != HttpProtocol.VERSION:
+        if version != HTTPProtocol.VERSION:
             raise ValueError(f"HTTP Response Parse Error: Unsupported version '{version}': {res_bytes}!")
 
-        if status_code not in HttpProtocol.STATUS_PHRASES:
+        if status_code not in HTTPProtocol.STATUS_PHRASES:
             raise ValueError(f"HTTP Response Parse Error: Unsupported status code '{status_code}': {res_bytes}!")
 
-        if status_msg != HttpProtocol.STATUS_PHRASES[status_code]:
+        if status_msg != HTTPProtocol.STATUS_PHRASES[status_code]:
             raise ValueError(
-                f"HTTP Response Parse Error: Incorrect phrase '{status_msg}!={HttpProtocol.STATUS_PHRASES[status_code]}': {res_bytes}!"
+                f"HTTP Response Parse Error: Incorrect phrase '{status_msg}!={HTTPProtocol.STATUS_PHRASES[status_code]}': {res_bytes}!"
             )
 
-        return HttpProtocol.HTTPResponseStruct(version, status_code, headers, body)
+        return HTTPProtocol.HTTPResponseStruct(version, status_code, headers, body)
 
     @staticmethod
     def _parse_message(msg_bytes: bytes) -> list[list[str], dict[str, str], str]:
@@ -1210,23 +1210,23 @@ class HttpProtocol:
         msg_str = msg_bytes.decode("utf-8")
 
         try:
-            header, body = msg_str.split(f"{HttpProtocol.CRLF}{HttpProtocol.CRLF}")
+            header, body = msg_str.split(f"{HTTPProtocol.CRLF}{HTTPProtocol.CRLF}")
         except ValueError as e:
             raise ValueError(f"HTTP Message Parse Error: Could not split headers / body! ({msg_str})\n{e}")
 
         # header_lines contains both start-line and header-lines
-        header_lines = header.split(HttpProtocol.CRLF)
+        header_lines = header.split(HTTPProtocol.CRLF)
         if len(header_lines) < 0:
             raise ValueError(f"HTTP Message Parse Error: Headers expect at least 1 line! ({msg_str})")
 
         # RFC 2616 specifies some start-line which can be a request-line or a status-line, hence the naming chosen here.
-        # start = header_lines.pop(0).split(HttpProtocol.SP)
+        # start = header_lines.pop(0).split(HTTPProtocol.SP)
         start = header_lines.pop(0)
 
         headers = {}
         for header_line in header_lines:
             try:
-                key, value = header_line.split(f":{HttpProtocol.SP}")
+                key, value = header_line.split(f":{HTTPProtocol.SP}")
             except ValueError as e:
                 raise ValueError(f"HTTP Message Parse Error: Headers expect 'key: value'! ({msg_str})\n{e}")
             headers[key.lower()] = value
@@ -1239,25 +1239,25 @@ class HttpProtocol:
         for key in headers:
             headers[key] = headers[key].lower()
 
-        if method not in HttpProtocol.VALID_METHODS:
+        if method not in HTTPProtocol.VALID_METHODS:
             raise NotImplementedError(f"HTTPRequest initialized with unsupported method '{method}'!")
 
         if method == "HEAD" and body:
             # According to RFC 2616 HEAD requests should not have a body
             raise NotImplementedError(f"HTTPRequest method HEAD should not receive {body=}")
 
-        return HttpProtocol.HTTPRequestStruct(method, uri, HttpProtocol.VERSION, headers, body)
+        return HTTPProtocol.HTTPRequestStruct(method, uri, HTTPProtocol.VERSION, headers, body)
 
     @staticmethod
     def create_response(status_code: str, *, headers: dict[str, str] = {}, body="") -> HTTPResponseStruct:
-        if status_code not in HttpProtocol.STATUS_PHRASES:
+        if status_code not in HTTPProtocol.STATUS_PHRASES:
             raise NotImplementedError(f"HTTPResponse initialized with unsupported status code '{status_code}'!")
 
-        return HttpProtocol.HTTPResponseStruct(HttpProtocol.VERSION, status_code, headers, body)
+        return HTTPProtocol.HTTPResponseStruct(HTTPProtocol.VERSION, status_code, headers, body)
 
     @staticmethod
     def get_exam_string(message: HTTPRequestStruct | HTTPRequestStruct, note: str = "") -> None:
-        message_type = "request" if type(message) is HttpProtocol.HTTPRequestStruct else "response"
+        message_type = "request" if type(message) is HTTPProtocol.HTTPRequestStruct else "response"
         message_string = "\n".join(f"  | {line}" for line in message.to_string().split("\n"))
 
         def parse_value(field_name, value):
@@ -1309,22 +1309,22 @@ class ApplicationLayer:
 
         # Receive HEAD request and send random 300 response
         req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
+        req = HTTPProtocol.parse_request(req_bytes)
+        print(HTTPProtocol.get_exam_string(req, note="RECEIVED"))
 
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
+        status = random.choice(list(HTTPProtocol.STATUS_PHRASES.keys()))
+        res = HTTPProtocol.create_response(status)
+        print(HTTPProtocol.get_exam_string(res, note="SENDING"))
         sock.send(res.to_bytes())
 
         # Receive GET request and send random 300 response
         req_bytes = sock.receive(TCPProtocol.WINDOW_SIZE)
-        req = HttpProtocol.parse_request(req_bytes)
-        print(HttpProtocol.get_exam_string(req, note="RECEIVED"))
+        req = HTTPProtocol.parse_request(req_bytes)
+        print(HTTPProtocol.get_exam_string(req, note="RECEIVED"))
 
-        status = random.choice(list(HttpProtocol.STATUS_PHRASES.keys()))
-        res = HttpProtocol.create_response(status)
-        print(HttpProtocol.get_exam_string(res, note="SENDING"))
+        status = random.choice(list(HTTPProtocol.STATUS_PHRASES.keys()))
+        res = HTTPProtocol.create_response(status)
+        print(HTTPProtocol.get_exam_string(res, note="SENDING"))
         sock.send(res.to_bytes())
 
         sock.wait_close()
